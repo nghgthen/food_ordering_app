@@ -1,57 +1,57 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../models/food.dart';
 
 class FoodService {
-  // Trong thực tế, sẽ thay bằng API call đến Laravel backend
-  Future<List<Food>> getFoods() async {
-    // Giả lập độ trễ như khi gọi API
-    await Future.delayed(const Duration(seconds: 1));
+  // URL base của Laravel API
+  static const String baseUrl = 'http://127.0.0.1:8000/api';
 
-    return [
-      Food(
-        id: '1',
-        name: 'Fried Egg',
-        image: 'assets/images/foods/fried_egg.png',
-        price: 15.06,
-        rating: 4.3,
-        reviewCount: 2005,
-        description: 'Delicious fried egg with special sauce',
-        categoryId: 'salad',
-      ),
-      Food(
-        id: '2',
-        name: 'Mixed Vegetable',
-        image: 'assets/images/foods/mixed_vegetable.png',
-        price: 17.03,
-        rating: 4.3,
-        reviewCount: 100,
-        description: 'Fresh mixed vegetables with special dressing',
-        categoryId: 'salad',
-      ),
-      Food(
-        id: '3',
-        name: 'Burger',
-        image: 'assets/images/foods/burger.png',
-        price: 5.99,
-        rating: 4.9,
-        reviewCount: 1500,
-        description: 'Juicy beef burger with cheese and vegetables',
-        categoryId: 'burger',
-      ),
-      Food(
-        id: '4',
-        name: 'Via Napoli Pizzeria',
-        image: 'assets/images/foods/pizza.png',
-        price: 8.5,
-        rating: 4.8,
-        reviewCount: 1200,
-        description: 'Delicious pizza with various toppings',
-        categoryId: 'pizza',
-      ),
-    ];
+  // Lấy tất cả foods từ API
+  Future<List<Food>> getFoods() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/foods'),
+      headers: {'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final List jsonData = json.decode(response.body);
+      return jsonData.map((e) => Food.fromJson(e)).toList();
+    } else {
+      throw Exception('Failed to load foods');
+    }
   }
 
+  // Lấy foods theo category
   Future<List<Food>> getFoodsByCategory(String categoryId) async {
-    final allFoods = await getFoods();
-    return allFoods.where((food) => food.categoryId == categoryId).toList();
+    if (categoryId == 'all') {
+      return getFoods();
+    }
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/foods/category/$categoryId'),
+      headers: {'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final List jsonData = json.decode(response.body);
+      return jsonData.map((e) => Food.fromJson(e)).toList();
+    } else {
+      throw Exception('Failed to load foods by category');
+    }
+  }
+
+  // Tìm kiếm foods theo tên
+  Future<List<Food>> searchFoods(String keyword) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/foods?search=$keyword'),
+      headers: {'Accept': 'application/json'},
+    );
+
+    if (response.statusCode == 200) {
+      final List jsonData = json.decode(response.body);
+      return jsonData.map((e) => Food.fromJson(e)).toList();
+    } else {
+      throw Exception('Failed to search foods');
+    }
   }
 }

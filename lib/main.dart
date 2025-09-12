@@ -5,13 +5,13 @@ import 'providers/locale_provider.dart';
 import 'providers/font_provider.dart';
 import 'providers/food_provider.dart';
 import 'providers/cart_provider.dart';
+import 'providers/auth_provider.dart';
 import 'services/food_service.dart';
 import 'pages/home/home_page.dart';
 import 'pages/orders/orders_page.dart';
 import 'pages/cart/cart_page.dart';
 import 'pages/settings/settings_page.dart';
 import 'pages/auth/login_page.dart';
-import 'services/auth_service.dart';
 import 'l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -24,6 +24,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => FontProvider()),
         ChangeNotifierProvider(create: (_) => FoodProvider(foodService: FoodService())),
         ChangeNotifierProvider(create: (_) => CartProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider()..checkLogin()),
       ],
       child: const AppRoot(),
     ),
@@ -37,55 +38,42 @@ class AppRoot extends StatefulWidget {
 }
 
 class _AppRootState extends State<AppRoot> {
-  final AuthService _auth = AuthService();
   int _currentIndex = 0;
-  late final List<Widget> _screens;
-
-  @override
-  void initState() {
-    super.initState();
-    _screens = [
-      const HomePage(),
-      const OrdersPage(),
-      const CartPage(),
-      SettingsPage(
-        onLoginPressed: () => _openLogin(context),
-        onLogoutPressed: _handleLogout,
-      ),
-    ];
-  }
-
-  Future<void> _openLogin(BuildContext context) async {
-    final res = await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const LoginPage()),
-    );
-    if (!mounted) return;
-    if (res == true) setState(() {});
-  }
-
-  Future<void> _handleLogout() async {
-    await _auth.logout();
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Logged out')),
-    );
-    setState(() {});
-  }
+  DateTime? _lastTapTime;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Provider.of<ThemeProvider>(context);
-    final localeProv = Provider.of<LocaleProvider>(context);
-    final fontProv = Provider.of<FontProvider>(context);
+    final theme = context.watch<ThemeProvider>();
+    final localeProv = context.watch<LocaleProvider>();
+    final fontProv = context.watch<FontProvider>();
+
+    final screens = [
+      const HomePage(),
+      const OrdersPage(),
+      const CartPage(),
+      const SettingsPage(),
+    ];
 
     return MaterialApp(
       title: 'Food Ordering',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.light().copyWith(
         textTheme: ThemeData.light().textTheme.apply(fontSizeFactor: fontProv.scale),
+        bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+          backgroundColor: Colors.white,
+          selectedItemColor: Color(0xFFE53935),
+          unselectedItemColor: Colors.grey,
+          elevation: 8.0,
+        ),
       ),
       darkTheme: ThemeData.dark().copyWith(
         textTheme: ThemeData.dark().textTheme.apply(fontSizeFactor: fontProv.scale),
+        bottomNavigationBarTheme: BottomNavigationBarThemeData(
+          backgroundColor: Colors.grey[900],
+          selectedItemColor: const Color(0xFFE53935),
+          unselectedItemColor: Colors.grey[600],
+          elevation: 8.0,
+        ),
       ),
       themeMode: theme.isDark ? ThemeMode.dark : ThemeMode.light,
       locale: localeProv.locale,
@@ -101,50 +89,200 @@ class _AppRootState extends State<AppRoot> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      home: FutureBuilder<String?>(
-        future: _auth.getToken(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-
-          // Nếu có token thì load Home với navigation
-          if (snapshot.data != null) {
-            return Scaffold(
-              body: _screens[_currentIndex],
-              bottomNavigationBar: BottomNavigationBar(
-                currentIndex: _currentIndex,
-                selectedItemColor: Colors.red,
-                unselectedItemColor: Colors.grey,
-                onTap: (index) => setState(() => _currentIndex = index),
-                items: [
-                  BottomNavigationBarItem(
-                    icon: const Icon(Icons.home),
-                    label: AppLocalizations.of(context).t('home') ?? 'Home',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: const Icon(Icons.list_alt),
-                    label: AppLocalizations.of(context).t('orders') ?? 'Orders',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: const Icon(Icons.shopping_cart),
-                    label: AppLocalizations.of(context).t('cart') ?? 'Cart',
-                  ),
-                  BottomNavigationBarItem(
-                    icon: const Icon(Icons.settings),
-                    label: AppLocalizations.of(context).t('settings') ?? 'Settings',
-                  ),
-                ],
-              ),
-            );
-          }
-
-          // Nếu chưa có token → vào LoginPage luôn
-          return const LoginPage();
-        },
+      home: Scaffold(
+        body: IndexedStack(
+          index: _currentIndex,
+          children: screens,
+        ),
+        bottomNavigationBar: _buildBottomNavigationBar(context),
       ),
     );
+  }
+
+  Widget _buildBottomNavigationBar(BuildContext context) {
+    final auth = context.watch<AuthProvider>();
+    final cart = context.watch<CartProvider>();
+    
+    return Container(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(16),
+          topRight: Radius.circular(16),
+        ),
+        child: BottomNavigationBar(
+          currentIndex: _currentIndex,
+          type: BottomNavigationBarType.fixed,
+          elevation: 8.0,
+          selectedFontSize: 12,
+          unselectedFontSize: 12,
+          onTap: (index) => _onTabTapped(index, context, auth),
+          items: [
+            _buildNavItem(
+              icon: Icons.home_outlined,
+              activeIcon: Icons.home,
+              label: AppLocalizations.of(context)?.t('home') ?? 'Home',
+            ),
+            _buildNavItem(
+              icon: Icons.list_alt_outlined,
+              activeIcon: Icons.list_alt,
+              label: AppLocalizations.of(context)?.t('orders') ?? 'Orders',
+              requiresAuth: true,
+              isLoggedIn: auth.isLoggedIn,
+            ),
+            _buildNavItem(
+              icon: Icons.shopping_cart_outlined,
+              activeIcon: Icons.shopping_cart,
+              label: AppLocalizations.of(context)?.t('cart') ?? 'Cart',
+              // Giả sử CartProvider có thuộc tính itemCount
+              badge: cart.items.isNotEmpty ? '${cart.items.length}' : null,
+              requiresAuth: true,
+              isLoggedIn: auth.isLoggedIn,
+            ),
+            _buildNavItem(
+              icon: Icons.settings_outlined,
+              activeIcon: Icons.settings,
+              label: AppLocalizations.of(context)?.t('settings') ?? 'Settings',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  BottomNavigationBarItem _buildNavItem({
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+    String? badge,
+    bool requiresAuth = false,
+    bool isLoggedIn = true,
+  }) {
+    return BottomNavigationBarItem(
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(icon, color: requiresAuth && !isLoggedIn ? Colors.grey : null),
+          if (requiresAuth && !isLoggedIn)
+            Positioned(
+              right: -4,
+              top: -4,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.orange,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.lock, size: 10, color: Colors.white),
+              ),
+            ),
+          if (badge != null)
+            Positioned(
+              right: -8,
+              top: -4,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  badge,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+      activeIcon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(activeIcon),
+          if (requiresAuth && !isLoggedIn)
+            Positioned(
+              right: -4,
+              top: -4,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.orange,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.lock, size: 10, color: Colors.white),
+              ),
+            ),
+          if (badge != null)
+            Positioned(
+              right: -8,
+              top: -4,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  badge,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+      label: label,
+    );
+  }
+
+  Future<void> _onTabTapped(int index, BuildContext context, AuthProvider auth) async {
+    // Prevent double tap
+    final now = DateTime.now();
+    if (_lastTapTime != null && now.difference(_lastTapTime!) < const Duration(milliseconds: 300)) {
+      return;
+    }
+    _lastTapTime = now;
+
+    // Check if the tab requires authentication
+    if ((index == 1 || index == 2) && !auth.isLoggedIn) {
+      // Show login page with a smooth animation
+      final result = await Navigator.of(context).push(
+        PageRouteBuilder(
+          pageBuilder: (context, animation, secondaryAnimation) => LoginPage(redirectIndex: index),
+          transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            const begin = Offset(0.0, 1.0);
+            const end = Offset.zero;
+            const curve = Curves.easeInOut;
+            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
+            return SlideTransition(
+              position: animation.drive(tween),
+              child: child,
+            );
+          },
+        ),
+      );
+      
+      // If login was successful, navigate to the desired tab
+      if (result == true || auth.isLoggedIn) {
+        setState(() => _currentIndex = index);
+      }
+      return;
+    }
+    
+    setState(() => _currentIndex = index);
   }
 }

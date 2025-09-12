@@ -6,7 +6,7 @@ class Food {
   final double rating;
   final int reviewCount;
   final String description;
-  final String categoryId;
+  final int categoryId; // int, không còn String
 
   const Food({
     required this.id,
@@ -21,14 +21,14 @@ class Food {
 
   factory Food.fromJson(Map<String, dynamic> json) {
     return Food(
-      id: json['id'] ?? '',
+      id: json['id']?.toString() ?? '',
       name: json['name'] ?? '',
       image: json['image'] ?? '',
       price: double.tryParse(json['price'].toString()) ?? 0,
       rating: double.tryParse(json['rating'].toString()) ?? 0,
       reviewCount: json['review_count'] ?? 0,
       description: json['description'] ?? '',
-      categoryId: json['category_id'] ?? '',
+      categoryId: int.tryParse(json['category_id'].toString()) ?? 0,
     );
   }
 

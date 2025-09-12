@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../services/auth_service.dart';
-import '../auth/login_page.dart';
 import '../../l10n/app_localizations.dart';
 
 class OrdersPage extends StatelessWidget {
-  const OrdersPage({super.key});
+  final VoidCallback? onRequestLogin;
+  const OrdersPage({super.key, this.onRequestLogin});
 
   @override
   Widget build(BuildContext context) {
@@ -32,10 +32,7 @@ class OrdersPage extends StatelessWidget {
                   Text(loc.t('login_prompt')),
                   const SizedBox(height: 12),
                   ElevatedButton(
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginPage()),
-                    ),
+                    onPressed: onRequestLogin,
                     child: Text(loc.t('login')),
                   )
                 ],

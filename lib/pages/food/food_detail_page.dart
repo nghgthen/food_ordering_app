@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-
 import '../../models/food.dart';
 import '../../providers/cart_provider.dart';
 
@@ -20,13 +19,19 @@ class FoodDetailPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Ảnh món ăn
+            // Ảnh món ăn từ assets
             food.image.isNotEmpty
-                ? Image.asset(
-                    food.image,
-                    width: double.infinity,
-                    height: 220,
-                    fit: BoxFit.cover,
+                ? ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                    ),
+                    child: Image.asset(
+                      'assets/images/${food.image}',
+                      width: double.infinity,
+                      height: 220,
+                      fit: BoxFit.cover,
+                    ),
                   )
                 : Container(
                     width: double.infinity,
@@ -61,7 +66,7 @@ class FoodDetailPage extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
-                      color:const Color.fromARGB(255, 238, 206, 204),
+                      color: Color.fromARGB(255, 253, 19, 2),
                     ),
                   ),
                   const SizedBox(width: 16),

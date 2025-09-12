@@ -1,103 +1,264 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../../services/auth_service.dart';
-import '../../l10n/app_localizations.dart';
+import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
+import 'register_page.dart';
+import '/providers/auth_provider.dart'; // Import AuthProvider
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  final int? redirectIndex; // tab muốn quay về sau khi login
+
+  const LoginPage({super.key, this.redirectIndex});
 
   @override
   State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final AuthService _auth = AuthService();
   final TextEditingController emailCtrl = TextEditingController();
   final TextEditingController passCtrl = TextEditingController();
-  bool loading = false;
+  final _formKey = GlobalKey<FormState>();
+  bool _obscure = true;
+  String? _errorMessage;
 
   Future<void> _login() async {
-    setState(() => loading = true);
-    final ok = await _auth.login(emailCtrl.text.trim(), passCtrl.text.trim());
-    if (!mounted) return;
-    setState(() => loading = false);
-
-    if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).t('login_success'))),
-      );
-      Navigator.of(context).pop(true);
+    if (!_formKey.currentState!.validate()) return;
+    
+    _formKey.currentState!.save();
+    
+    final authProvider = context.read<AuthProvider>();
+    final success = await authProvider.login(emailCtrl.text, passCtrl.text);
+    
+    if (success) {
+      if (!mounted) return;
+      Navigator.pop(context, true); // Trả về true để báo login thành công
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).t('login_failed'))),
-      );
-    }
-  }
-
-  Future<void> _register() async {
-    setState(() => loading = true);
-    final ok = await _auth.register(emailCtrl.text.trim(), passCtrl.text.trim());
-    if (!mounted) return;
-    setState(() => loading = false);
-
-    if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).t('register_success'))),
-      );
-      Navigator.of(context).pop(true);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(AppLocalizations.of(context).t('register_failed'))),
-      );
+      setState(() {
+        _errorMessage = authProvider.error ?? "Đăng nhập thất bại";
+      });
     }
   }
 
   @override
+  void dispose() {
+    emailCtrl.dispose();
+    passCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final loc = AppLocalizations.of(context);
+    final authProvider = context.watch<AuthProvider>();
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('${loc.t('login')} / ${loc.t('register')}'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            TextField(
-              controller: emailCtrl,
-              decoration: const InputDecoration(labelText: 'Email'),
-            ),
-            const SizedBox(height: 8),
-            TextField(
-              controller: passCtrl,
-              decoration: const InputDecoration(labelText: 'Password'),
-              obscureText: true,
-            ),
-            const SizedBox(height: 16),
-            Row(
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
+                const SizedBox(height: 40),
+                Center(
+                  child: Column(
+                    children: [
+                      Image.asset("assets/images/foods/logo.png", height: 80),
+                      const SizedBox(height: 12),
+                      const Text(
+                        "hellofood",
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 40),
+
+                // Hiển thị lỗi
+                if (_errorMessage != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.red[50],
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.error, color: Colors.red),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, size: 16),
+                          onPressed: () => setState(() => _errorMessage = null),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Email
+                TextFormField(
+                  controller: emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    prefixIcon: Icon(Icons.email),
+                    labelText: "Email Address",
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Vui lòng nhập email";
+                    }
+                    if (!value.contains('@')) {
+                      return "Email không hợp lệ";
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Password
+                TextFormField(
+                  controller: passCtrl,
+                  obscureText: _obscure,
+                  decoration: InputDecoration(
+                    prefixIcon: const Icon(Icons.lock),
+                    labelText: "Password",
+                    border: const OutlineInputBorder(),
+                    suffixIcon: IconButton(
+                      icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                      onPressed: () => setState(() => _obscure = !_obscure),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return "Vui lòng nhập mật khẩu";
+                    }
+                    if (value.length < 6) {
+                      return "Mật khẩu phải có ít nhất 6 ký tự";
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () {
+                      // TODO: Implement forgot password
+                    },
+                    child: const Text("Forgot your password?"),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Sign In button
+                SizedBox(
+                  height: 50,
                   child: ElevatedButton(
-                    onPressed: loading ? null : _login,
-                    child: loading
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(color: Colors.white),
-                          )
-                        : Text(loc.t('login')),
+                    onPressed: authProvider.isLoading ? null : _login,
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      padding: EdgeInsets.zero,
+                    ),
+                    child: Ink(
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Colors.pink, Colors.orange],
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Container(
+                        alignment: Alignment.center,
+                        child: authProvider.isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text(
+                                "SIGN IN",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: loading ? null : _register,
-                    child: Text(loc.t('register')),
-                  ),
+
+                const SizedBox(height: 24),
+
+                // Or + social login
+                Row(
+                  children: const [
+                    Expanded(child: Divider()),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8),
+                      child: Text("Or"),
+                    ),
+                    Expanded(child: Divider()),
+                  ],
                 ),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.facebook, color: Colors.blue),
+                      onPressed: () {
+                        // TODO: Implement Facebook login
+                      },
+                    ),
+                    const SizedBox(width: 20),
+                    IconButton(
+                      icon: const Icon(Icons.g_mobiledata, color: Colors.red, size: 32),
+                      onPressed: () {
+                        // TODO: Implement Google login
+                      },
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 24),
+
+                // Link sang Sign Up
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text("Don't have an account? "),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => const RegisterPage()),
+                        );
+                      },
+                      child: const Text(
+                        "Sign Up",
+                        style: TextStyle(
+                          color: Colors.pink,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                )
               ],
             ),
-          ],
+          ),
         ),
       ),
     );

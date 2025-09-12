@@ -23,7 +23,7 @@ class FoodCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.1), // thay withOpacity
+              color: Colors.grey.withOpacity(0.1),
               blurRadius: 10,
               offset: const Offset(0, 5),
             ),
@@ -42,7 +42,7 @@ class FoodCard extends StatelessWidget {
                 ),
                 image: food.image.isNotEmpty
                     ? DecorationImage(
-                        image: AssetImage(food.image),
+                        image: AssetImage('assets/images/${food.image}'),
                         fit: BoxFit.cover,
                       )
                     : null,

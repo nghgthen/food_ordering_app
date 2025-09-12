@@ -1,7 +1,8 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -11,109 +12,173 @@ class RegisterPage extends StatefulWidget {
 }
 
 class _RegisterPageState extends State<RegisterPage> {
-  final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-
-  bool _isLoading = false;
+  final TextEditingController nameCtrl = TextEditingController();
+  final TextEditingController emailCtrl = TextEditingController();
+  final TextEditingController passCtrl = TextEditingController();
+  bool _obscure = true;
+  bool _loading = false;
 
   Future<void> _register() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      final url = Uri.parse("http://127.0.0.1:8000/api/register"); // đổi theo Laravel API
-      final response = await http.post(
-        url,
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "name": _nameController.text,
-          "email": _emailController.text,
-          "password": _passwordController.text,
-        }),
+    if (nameCtrl.text.isEmpty || emailCtrl.text.isEmpty || passCtrl.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Vui lòng nhập đầy đủ thông tin")),
       );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-
-        if (data['token'] != null) {
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('token', data['token']);
-
-          if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Đăng ký thành công!")),
-          );
-
-          Navigator.pushReplacementNamed(context, "/home");
-        } else {
-          _showError("Không nhận được token từ server");
-        }
-      } else {
-        _showError("Lỗi server: ${response.body}");
-      }
-    } catch (e) {
-      _showError("Lỗi kết nối: $e");
-    } finally {
-      setState(() => _isLoading = false);
+      return;
     }
-  }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+    setState(() => _loading = true);
+
+    final response = await http.post(
+      Uri.parse("http://127.0.0.1:8000/api/register"), // chỉnh URL API cho đúng
+      headers: {"Content-Type": "application/json"},
+      body: jsonEncode({
+        "name": nameCtrl.text,
+        "email": emailCtrl.text,
+        "password": passCtrl.text,
+      }),
     );
+
+    setState(() => _loading = false);
+
+    final data = jsonDecode(response.body);
+
+    if (response.statusCode == 200 && data['token'] != null) {
+      if (!mounted) return;
+
+      // Lưu token vào AuthProvider
+      
+
+      // Quay về AppRoot và báo login ok
+      Navigator.pop(context, true);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Đăng ký thất bại: ${data['message'] ?? 'Lỗi'}")),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Register")),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              TextFormField(
-                controller: _nameController,
-                decoration: const InputDecoration(labelText: "Name"),
-                validator: (value) =>
-                    value == null || value.isEmpty ? "Nhập tên" : null,
-              ),
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(labelText: "Email"),
-                validator: (value) =>
-                    value == null || !value.contains("@")
-                        ? "Email không hợp lệ"
-                        : null,
-              ),
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(labelText: "Password"),
-                obscureText: true,
-                validator: (value) =>
-                    value == null || value.length < 6
-                        ? "Mật khẩu >= 6 ký tự"
-                        : null,
-              ),
-              const SizedBox(height: 20),
-              _isLoading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
-                      onPressed: _register,
-                      child: const Text("Register"),
+              const SizedBox(height: 40),
+              Center(
+                child: Column(
+                  children: [
+                    Image.asset("assets/images/foods/logo.png", height: 80),
+                    const SizedBox(height: 12),
+                    const Text(
+                      "Create Account",
+                      style: TextStyle(
+                        fontSize: 26,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
                     ),
-              const SizedBox(height: 20),
-              TextButton(
-                onPressed: () {
-                  Navigator.pushReplacementNamed(context, "/login");
-                },
-                child: const Text("Đã có tài khoản? Đăng nhập"),
+                  ],
+                ),
               ),
+              const SizedBox(height: 40),
+
+              // Full Name
+              TextField(
+                controller: nameCtrl,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.person),
+                  labelText: "Full Name",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Email
+              TextField(
+                controller: emailCtrl,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.email),
+                  labelText: "Email Address",
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Password
+              TextField(
+                controller: passCtrl,
+                obscureText: _obscure,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Icons.lock),
+                  labelText: "Password",
+                  border: const OutlineInputBorder(),
+                  suffixIcon: IconButton(
+                    icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
+                    onPressed: () => setState(() => _obscure = !_obscure),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Sign Up button
+              SizedBox(
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: _loading ? null : _register,
+                  style: ElevatedButton.styleFrom(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    padding: EdgeInsets.zero,
+                  ),
+                  child: Ink(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Colors.pink, Colors.orange],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Container(
+                      alignment: Alignment.center,
+                      child: _loading
+                          ? const CircularProgressIndicator(color: Colors.white)
+                          : const Text(
+                              "SIGN UP",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Sign in link
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text("Already have an account? "),
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context); // quay lại LoginPage
+                    },
+                    child: const Text(
+                      "Sign In",
+                      style: TextStyle(
+                        color: Colors.pink,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              )
             ],
           ),
         ),

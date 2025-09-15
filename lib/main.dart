@@ -11,7 +11,7 @@ import 'pages/home/home_page.dart';
 import 'pages/orders/orders_page.dart';
 import 'pages/cart/cart_page.dart';
 import 'pages/settings/settings_page.dart';
-import 'pages/auth/login_page.dart';
+import 'pages/auth/login_page.dart'; // ĐẢM BẢO IMPORT NÀY ĐÚNG
 import 'l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -142,8 +142,7 @@ class _AppRootState extends State<AppRoot> {
               icon: Icons.shopping_cart_outlined,
               activeIcon: Icons.shopping_cart,
               label: AppLocalizations.of(context)?.t('cart') ?? 'Cart',
-              // Giả sử CartProvider có thuộc tính itemCount
-              badge: cart.items.isNotEmpty ? '${cart.items.length}' : null,
+              badge: cart.items.isNotEmpty ? cart.items.length.toString() : null,
               requiresAuth: true,
               isLoggedIn: auth.isLoggedIn,
             ),
@@ -166,11 +165,13 @@ class _AppRootState extends State<AppRoot> {
     bool requiresAuth = false,
     bool isLoggedIn = true,
   }) {
+    Color? iconColor = requiresAuth && !isLoggedIn ? Colors.grey : null;
+    
     return BottomNavigationBarItem(
       icon: Stack(
         clipBehavior: Clip.none,
         children: [
-          Icon(icon, color: requiresAuth && !isLoggedIn ? Colors.grey : null),
+          Icon(icon, color: iconColor),
           if (requiresAuth && !isLoggedIn)
             Positioned(
               right: -4,
@@ -184,7 +185,7 @@ class _AppRootState extends State<AppRoot> {
                 child: const Icon(Icons.lock, size: 10, color: Colors.white),
               ),
             ),
-          if (badge != null)
+          if (badge != null && badge.isNotEmpty)
             Positioned(
               right: -8,
               top: -4,
@@ -209,7 +210,7 @@ class _AppRootState extends State<AppRoot> {
       activeIcon: Stack(
         clipBehavior: Clip.none,
         children: [
-          Icon(activeIcon),
+          Icon(activeIcon, color: requiresAuth && !isLoggedIn ? Colors.grey : const Color(0xFFE53935)),
           if (requiresAuth && !isLoggedIn)
             Positioned(
               right: -4,
@@ -223,7 +224,7 @@ class _AppRootState extends State<AppRoot> {
                 child: const Icon(Icons.lock, size: 10, color: Colors.white),
               ),
             ),
-          if (badge != null)
+          if (badge != null && badge.isNotEmpty)
             Positioned(
               right: -8,
               top: -4,
@@ -257,28 +258,37 @@ class _AppRootState extends State<AppRoot> {
     }
     _lastTapTime = now;
 
-    // Check if the tab requires authentication
+    // Check if the tab requires authentication (Orders = 1, Cart = 2)
     if ((index == 1 || index == 2) && !auth.isLoggedIn) {
-      // Show login page with a smooth animation
-      final result = await Navigator.of(context).push(
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) => LoginPage(redirectIndex: index),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            const begin = Offset(0.0, 1.0);
-            const end = Offset.zero;
-            const curve = Curves.easeInOut;
-            var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-            return SlideTransition(
-              position: animation.drive(tween),
-              child: child,
-            );
-          },
+      // Show login dialog
+      final result = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text(AppLocalizations.of(context)?.t('login_required') ?? 'Login Required'),
+          content: Text(AppLocalizations.of(context)?.t('login_to_continue') ?? 'Please login to access this feature'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(AppLocalizations.of(context)?.t('cancel') ?? 'Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(AppLocalizations.of(context)?.t('login') ?? 'Login'),
+            ),
+          ],
         ),
       );
-      
-      // If login was successful, navigate to the desired tab
-      if (result == true || auth.isLoggedIn) {
-        setState(() => _currentIndex = index);
+
+      if (result == true) {
+        // Navigate to login page
+        final loginResult = await Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const LoginPage()),
+        );
+        
+        // If login was successful, navigate to the desired tab
+        if (loginResult == true && mounted) {
+          setState(() => _currentIndex = index);
+        }
       }
       return;
     }

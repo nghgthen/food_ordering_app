@@ -10,9 +10,10 @@ import '../food/food_detail_page.dart';
 import '../food/popular_foods_page.dart';
 import '../food/all_foods_page.dart';
 import '../../l10n/app_localizations.dart';
+import '../auth/login_page.dart'; // THÊM IMPORT NÀY
 
 class HomePage extends StatefulWidget {
-  final VoidCallback? onRequestLogin;
+  final VoidCallback? onRequestLogin; // CALLBACK ĐỂ MỞ LOGIN
   const HomePage({super.key, this.onRequestLogin});
 
   @override
@@ -75,8 +76,8 @@ class _HomePageState extends State<HomePage> {
             ),
             TextButton(
               onPressed: () {
-                Navigator.pop(ctx);
-                widget.onRequestLogin?.call();
+                Navigator.pop(ctx); // ĐÓNG DIALOG TRƯỚC
+                _navigateToLogin(); // ĐIỀU HƯỚNG ĐẾN LOGIN
               },
               child: Text(loc.t('login')),
             ),
@@ -93,6 +94,19 @@ class _HomePageState extends State<HomePage> {
         duration: const Duration(seconds: 1),
       ),
     );
+  }
+
+  // HÀM MỚI: XỬ LÝ ĐIỀU HƯỚNG ĐẾN LOGIN PAGE
+  void _navigateToLogin() {
+    if (widget.onRequestLogin != null) {
+      // SỬ DỤNG CALLBACK TỪ PARENT NẾU CÓ
+      widget.onRequestLogin!();
+    } else {
+      // FALLBACK: TỰ ĐIỀU HƯỚNG NẾU KHÔNG CÓ CALLBACK
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
+    }
   }
 
   @override

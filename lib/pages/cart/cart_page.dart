@@ -1,20 +1,25 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+
 import '../../services/auth_service.dart';
 import '../../providers/cart_provider.dart';
+import '../../providers/orders_provider.dart';
 import '../../l10n/app_localizations.dart';
 
 class CartPage extends StatelessWidget {
   final VoidCallback? onRequestLogin;
-  const CartPage({super.key, this.onRequestLogin});
+  final void Function(int)? onSwitchTab;
+  const CartPage({super.key, this.onRequestLogin, this.onSwitchTab});
 
   @override
   Widget build(BuildContext context) {
     final auth = AuthService();
     final cart = Provider.of<CartProvider>(context);
     final loc = AppLocalizations.of(context);
-    
+
     return FutureBuilder<bool>(
       future: auth.isLoggedIn,
       builder: (context, snapshot) {
@@ -23,9 +28,9 @@ class CartPage extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        
+
         final isLoggedIn = snapshot.data ?? false;
-        
+
         if (!isLoggedIn) {
           return Scaffold(
             appBar: AppBar(
@@ -51,7 +56,8 @@ class CartPage extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.orange,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 30, vertical: 15),
                     ),
                     child: Text(loc.t('login')),
                   )
@@ -60,7 +66,7 @@ class CartPage extends StatelessWidget {
             ),
           );
         }
-        
+
         return Scaffold(
           appBar: AppBar(
             title: Image.asset(
@@ -85,7 +91,8 @@ class CartPage extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.shopping_cart_outlined, size: 80, color: Colors.grey),
+          const Icon(Icons.shopping_cart_outlined,
+              size: 80, color: Colors.grey),
           const SizedBox(height: 20),
           Text(
             loc.t('Not yet added a dish...'),
@@ -102,10 +109,10 @@ class CartPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCartWithItems(CartProvider cart, BuildContext context, AppLocalizations loc) {
+  Widget _buildCartWithItems(
+      CartProvider cart, BuildContext context, AppLocalizations loc) {
     return Column(
       children: [
-        // Header
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
@@ -120,8 +127,6 @@ class CartPage extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
         ),
-
-        // List items
         Expanded(
           flex: 1,
           child: ListView.builder(
@@ -133,21 +138,14 @@ class CartPage extends StatelessWidget {
             },
           ),
         ),
-
-        // Bottom section
-        Expanded(
-          flex: 1,
-          child: Container(
-            color: Colors.white,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildPromoCodeSection(),
-                _buildOrderSummary(cart, loc),
-                _buildPaymentMethodSection(loc),
-                _buildCheckoutButton(context, cart, loc),
-              ],
-            ),
+        Container(
+          color: Colors.white,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildOrderSummary(cart, loc),
+              _buildCheckoutButton(context, cart, loc),
+            ],
           ),
         ),
       ],
@@ -162,7 +160,6 @@ class CartPage extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: [
-            // Food Image
             Container(
               width: 60,
               height: 60,
@@ -173,8 +170,8 @@ class CartPage extends StatelessWidget {
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
                 child: Image.asset(
-                  item.food.image.startsWith('assets/') 
-                      ? item.food.image 
+                  item.food.image.startsWith('assets/')
+                      ? item.food.image
                       : 'assets/images/${item.food.image}',
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
@@ -190,8 +187,6 @@ class CartPage extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-
-            // Food Details
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -205,35 +200,21 @@ class CartPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '\$${item.food.price.toStringAsFixed(2)}',
+                    "\$${item.food.price.toStringAsFixed(2)}",
                     style: TextStyle(
                       color: Colors.green[700],
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Choose ${item.food.name}',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
-                  ),
                 ],
               ),
             ),
-
-            // Quantity Controls
             Row(
               children: [
                 IconButton(
                   icon: const Icon(Icons.remove, size: 20),
                   onPressed: () => cart.updateQuantity(item.food.id, item.quantity - 1),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.grey[200],
-                    padding: const EdgeInsets.all(4),
-                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -245,34 +226,10 @@ class CartPage extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.add, size: 20),
                   onPressed: () => cart.updateQuantity(item.food.id, item.quantity + 1),
-                  style: IconButton.styleFrom(
-                    backgroundColor: Colors.grey[200],
-                    padding: const EdgeInsets.all(4),
-                  ),
                 ),
               ],
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPromoCodeSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Add Your Promo Code',
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-            borderSide: BorderSide(color: Colors.grey[300]!),
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          suffixIcon: IconButton(
-            icon: const Icon(Icons.arrow_forward, color: Colors.orange),
-            onPressed: () {},
-          ),
         ),
       ),
     );
@@ -292,16 +249,22 @@ class CartPage extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Subtotal', style: TextStyle(color: Colors.grey, fontSize: 14)),
-              Text('\$${cart.totalPrice.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              const Text('Subtotal',
+                  style: TextStyle(color: Colors.grey, fontSize: 14)),
+              Text("\$${cart.totalPrice.toStringAsFixed(2)}",
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14)),
             ],
           ),
           const SizedBox(height: 6),
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Delivery Fee', style: TextStyle(color: Colors.grey, fontSize: 14)),
-              Text('\$0.99', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+              Text('Delivery Fee',
+                  style: TextStyle(color: Colors.grey, fontSize: 14)),
+              Text("\$0.99",
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 14)),
             ],
           ),
           const SizedBox(height: 8),
@@ -312,10 +275,11 @@ class CartPage extends StatelessWidget {
             children: [
               Text(
                 loc.t('total'),
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                    fontSize: 16, fontWeight: FontWeight.bold),
               ),
               Text(
-                '\$${(cart.totalPrice + 0.99).toStringAsFixed(2)}',
+                "\$${(cart.totalPrice + 0.99).toStringAsFixed(2)}",
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -329,52 +293,7 @@ class CartPage extends StatelessWidget {
     );
   }
 
-  Widget _buildPaymentMethodSection(AppLocalizations loc) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Payment Method',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey[800],
-            ),
-          ),
-          const SizedBox(height: 6),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey[300]!),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.credit_card, color: Colors.orange, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'Credit/Debit Card',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey[700],
-                  ),
-                ),
-                const Spacer(),
-                const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCheckoutButton(BuildContext context, CartProvider cart, AppLocalizations loc) {
-    final totalWithDelivery = cart.totalPrice + 0.99;
-    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ElevatedButton(
@@ -387,39 +306,159 @@ class CartPage extends StatelessWidget {
             borderRadius: BorderRadius.circular(8),
           ),
         ),
-        child: Text(
-          'Checkout - \$${totalWithDelivery.toStringAsFixed(2)}',
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+        child: const Text(
+          'Checkout',
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
         ),
       ),
     );
   }
 
   void _processCheckout(BuildContext context, CartProvider cart, AppLocalizations loc) {
-    final totalWithDelivery = cart.totalPrice + 0.99;
-    
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirm Order'),
-        content: Text('Total: \$${totalWithDelivery.toStringAsFixed(2)} (including delivery)'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: Text(loc.t('cancel')),
+  final addressController = TextEditingController();
+  String paymentMethod = "cash";
+  final ordersProvider = Provider.of<OrdersProvider>(context, listen: false);
+
+  showDialog(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      title: const Text('Checkout'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: addressController,
+            decoration: const InputDecoration(labelText: "Shipping Address"),
           ),
-          TextButton(
-            onPressed: () {
-              cart.clearCart();
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Order placed successfully!')),
-              );
-            },
-            child: const Text('Confirm', style: TextStyle(color: Colors.orange)),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<String>(
+            value: paymentMethod,
+            items: const [
+              DropdownMenuItem(value: "cash", child: Text("Cash on Delivery")),
+              DropdownMenuItem(value: "card", child: Text("Credit/Debit Card")),
+            ],
+            onChanged: (val) => paymentMethod = val!,
           ),
         ],
       ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: Text(loc.t('cancel')),
+        ),
+        TextButton(
+          onPressed: () async {
+            Navigator.pop(ctx);
+
+            // ✅ Lưu lại items trước khi clear
+            final orderItems = cart.items
+                .map((item) => {
+                      "food_id": item.food.id,
+                      "quantity": item.quantity,
+                      "price": item.food.price,
+                    })
+                .toList();
+
+            final totalAmount = cart.totalPrice + 0.99;
+
+            final success = await _submitOrder(
+              cart,
+              addressController.text,
+              paymentMethod,
+              context,
+            );
+
+            if (success) {
+              // Update OrdersProvider trước khi clear giỏ
+              ordersProvider.addOrder({
+                "id": DateTime.now().millisecondsSinceEpoch,
+                "total_amount": totalAmount,
+                "payment_method": paymentMethod,
+                "shipping_address": addressController.text,
+                "status": "pending",
+                "items": orderItems,
+              });
+
+              cart.clearCart();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Order placed successfully!')),
+              );
+
+              // Nếu có bottom nav → chuyển tab Orders
+              if (onSwitchTab != null) onSwitchTab!(1);
+            }
+          },
+          child: const Text(
+            'Confirm',
+            style: TextStyle(color: Colors.orange),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+
+  Future<bool> _submitOrder(CartProvider cart, String address,
+      String paymentMethod, BuildContext context) async {
+    final auth = AuthService();
+    final token = await auth.getToken();
+    final userId = await auth.getUserId();
+
+    if (token == null || token.isEmpty) {
+      debugPrint("❌ Token is null or empty");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid token, please login again!')),
+      );
+      return false;
+    }
+
+    if (userId == null) {
+      debugPrint("❌ UserId is null");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Invalid user ID, please login again!')),
+      );
+      return false;
+    }
+
+    final url = Uri.parse("http://172.20.10.3:8000/api/orders");
+    final orderData = {
+      "user_id": userId,
+      "total_amount": cart.totalPrice + 0.99,
+      "status": "pending",
+      "shipping_address": address,
+      "payment_method": paymentMethod,
+      "payment_status": "unpaid",
+      "items": cart.items
+          .map((item) => {
+                "food_id": item.food.id,
+                "quantity": item.quantity,
+                "price": item.food.price,
+              })
+          .toList(),
+    };
+
+    debugPrint("📦 Sending order: $orderData");
+
+    final response = await http.post(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode(orderData),
     );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      debugPrint("✅ Order success: ${response.body}");
+      return true;
+    } else {
+      debugPrint("❌ Order failed: ${response.body}");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Order failed!')),
+      );
+      return false;
+    }
   }
 }

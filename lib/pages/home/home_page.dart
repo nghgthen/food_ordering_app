@@ -90,7 +90,7 @@ class _HomePageState extends State<HomePage> {
     context.read<CartProvider>().addToCart(food);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Added ${food.name} to cart'),
+        content: Text('${loc.t('added')} ${food.name} ${loc.t('to_cart')}'),
         duration: const Duration(seconds: 1),
       ),
     );
@@ -102,7 +102,7 @@ class _HomePageState extends State<HomePage> {
       // SỬ DỤNG CALLBACK TỪ PARENT NẾU CÓ
       widget.onRequestLogin!();
     } else {
-      // FALLBACK: TỰ ĐIỀU HƯỚNG NẾU KHÔNG CÓ CALLBACK
+// FALLBACK: TỰ ĐIỀU HƯỚNG NẾU KHÔNG CÓ CALLBACK
       Navigator.of(context).push(
         MaterialPageRoute(builder: (_) => const LoginPage()),
       );
@@ -112,6 +112,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     final foodProvider = context.watch<FoodProvider>();
+    final loc = AppLocalizations.of(context);
 
     // Lọc món theo categoryId
     final selectedId = categoryMap[_selectedCategory] ?? 0;
@@ -121,9 +122,9 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'What would you like to eat?',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        title: Text(
+          loc.t('what_would_you_like_to_eat'),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -133,7 +134,7 @@ class _HomePageState extends State<HomePage> {
       body: foodProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
           : foods.isEmpty
-              ? const Center(child: Text('No foods available'))
+              ? Center(child: Text(loc.t('no_foods_available')))
               : SingleChildScrollView(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -153,24 +154,26 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildSearchBar() {
+    final loc = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: Colors.grey.shade100,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: const TextField(
+      child: TextField(
         decoration: InputDecoration(
-          hintText: 'What would you like to buy?',
+          hintText: loc.t('what_would_you_like_to_buy'),
           border: InputBorder.none,
-          icon: Icon(Icons.search, color: Colors.grey),
-          suffixIcon: Icon(Icons.filter_list, color: Colors.grey),
+          icon: const Icon(Icons.search, color: Colors.grey),
+          suffixIcon: const Icon(Icons.filter_list, color: Colors.grey),
         ),
       ),
     );
   }
 
   Widget _buildCategories() {
+    final loc = AppLocalizations.of(context);
     final categories = categoryMap.keys.toList();
     final icons = [
       Icons.apps,
@@ -194,9 +197,9 @@ class _HomePageState extends State<HomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Categories',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        Text(
+          loc.t('categories'),
+style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         SizedBox(
@@ -228,7 +231,7 @@ class _HomePageState extends State<HomePage> {
                       Icon(icons[index], color: colors[index], size: 28),
                       const SizedBox(height: 6),
                       Text(
-                        category,
+                        loc.t('category_${category.toLowerCase()}'),
                         style: TextStyle(
                           fontWeight: FontWeight.w500,
                           fontSize: 12,
@@ -247,6 +250,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildPopularFoods(FoodProvider foodProvider) {
+    final loc = AppLocalizations.of(context);
     final popular = foodProvider.popularFoods;
     if (popular.isEmpty) return const SizedBox();
 
@@ -256,9 +260,9 @@ class _HomePageState extends State<HomePage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'Popular Foods',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              loc.t('popular_foods'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             GestureDetector(
               onTap: () {
@@ -269,9 +273,9 @@ class _HomePageState extends State<HomePage> {
                   ),
                 );
               },
-              child: const Text(
-                'See all',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
+              child: Text(
+                loc.t('see_all'),
+                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
               ),
             ),
           ],
@@ -279,7 +283,7 @@ class _HomePageState extends State<HomePage> {
         const SizedBox(height: 16),
         SizedBox(
           height: 230,
-          child: ListView.builder(
+child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: popular.length,
             itemBuilder: (context, index) {
@@ -303,15 +307,16 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildAllFoods(List<Food> foods) {
+    final loc = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
-              'All Foods',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            Text(
+              loc.t('all_foods'),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             GestureDetector(
               onTap: () {
@@ -320,9 +325,9 @@ class _HomePageState extends State<HomePage> {
                   MaterialPageRoute(builder: (_) => AllFoodsPage(foods: foods)),
                 );
               },
-              child: const Text(
-                'See all',
-                style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
+              child: Text(
+                loc.t('see_all'),
+                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
               ),
             ),
           ],

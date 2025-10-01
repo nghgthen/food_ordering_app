@@ -6,12 +6,13 @@ import 'providers/font_provider.dart';
 import 'providers/food_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/auth_provider.dart';
+import 'providers/orders_provider.dart'; // ✅ thêm import
 import 'services/food_service.dart';
 import 'pages/home/home_page.dart';
 import 'pages/orders/orders_page.dart';
 import 'pages/cart/cart_page.dart';
 import 'pages/settings/settings_page.dart';
-import 'pages/auth/login_page.dart'; // ĐẢM BẢO IMPORT NÀY ĐÚNG
+import 'pages/auth/login_page.dart';
 import 'l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -25,6 +26,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => FoodProvider(foodService: FoodService())),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()..checkLogin()),
+        ChangeNotifierProvider(create: (_) => OrdersProvider()), // ✅ thêm OrdersProvider
       ],
       child: const AppRoot(),
     ),
@@ -102,7 +104,7 @@ class _AppRootState extends State<AppRoot> {
   Widget _buildBottomNavigationBar(BuildContext context) {
     final auth = context.watch<AuthProvider>();
     final cart = context.watch<CartProvider>();
-    
+
     return Container(
       decoration: BoxDecoration(
         boxShadow: [
@@ -166,7 +168,7 @@ class _AppRootState extends State<AppRoot> {
     bool isLoggedIn = true,
   }) {
     Color? iconColor = requiresAuth && !isLoggedIn ? Colors.grey : null;
-    
+
     return BottomNavigationBarItem(
       icon: Stack(
         clipBehavior: Clip.none,
@@ -284,7 +286,7 @@ class _AppRootState extends State<AppRoot> {
         final loginResult = await Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const LoginPage()),
         );
-        
+
         // If login was successful, navigate to the desired tab
         if (loginResult == true && mounted) {
           setState(() => _currentIndex = index);
@@ -292,7 +294,7 @@ class _AppRootState extends State<AppRoot> {
       }
       return;
     }
-    
+
     setState(() => _currentIndex = index);
   }
 }

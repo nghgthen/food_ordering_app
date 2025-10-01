@@ -31,7 +31,23 @@ class AppLocalizations {
       'login_success': 'Login success',
       'login_failed': 'Login failed',
       'register_success': 'Register success',
-      'register_failed': 'Register failed'
+      'register_failed': 'Register failed',
+      // HomePage keys
+      'what_would_you_like_to_eat': 'What would you like to eat?',
+      'no_foods_available': 'No foods available',
+      'what_would_you_like_to_buy': 'What would you like to buy?',
+      'categories': 'Categories',
+      'category_all': 'All',
+      'category_burger': 'Burger',
+      'category_pizza': 'Pizza',
+      'category_sushi': 'Sushi',
+      'category_cake': 'Cake',
+      'category_drinks': 'Drinks',
+      'category_salad': 'Salad',
+      'popular_foods': 'Popular Foods',
+      'all_foods': 'All Foods',
+      'added': 'Added',
+      'to_cart': 'to cart'
     },
     'vi': {
       'home': 'Trang chủ',
@@ -58,7 +74,23 @@ class AppLocalizations {
       'login_success': 'Đăng nhập thành công',
       'login_failed': 'Đăng nhập thất bại',
       'register_success': 'Đăng ký thành công',
-      'register_failed': 'Đăng ký thất bại'
+      'register_failed': 'Đăng ký thất bại',
+      // HomePage keys
+      'what_would_you_like_to_eat': 'Bạn muốn ăn gì?',
+'no_foods_available': 'Không có món ăn nào',
+      'what_would_you_like_to_buy': 'Bạn muốn mua gì?',
+      'categories': 'Danh mục',
+      'category_all': 'Tất cả',
+      'category_burger': 'Burger',
+      'category_pizza': 'Pizza',
+      'category_sushi': 'Sushi',
+      'category_cake': 'Bánh',
+      'category_drinks': 'Đồ uống',
+      'category_salad': 'Salad',
+      'popular_foods': 'Món phổ biến',
+      'all_foods': 'Tất cả món',
+      'added': 'Đã thêm',
+      'to_cart': 'vào giỏ hàng'
     },
     'es': {
       'home': 'Inicio',
@@ -85,7 +117,23 @@ class AppLocalizations {
       'login_success': 'Inicio de sesión correcto',
       'login_failed': 'Error de inicio',
       'register_success': 'Registro correcto',
-      'register_failed': 'Registro fallido'
+      'register_failed': 'Registro fallido',
+      // HomePage keys
+      'what_would_you_like_to_eat': '¿Qué te gustaría comer?',
+      'no_foods_available': 'No hay comidas disponibles',
+      'what_would_you_like_to_buy': '¿Qué te gustaría comprar?',
+      'categories': 'Categorías',
+      'category_all': 'Todo',
+      'category_burger': 'Hamburguesa',
+      'category_pizza': 'Pizza',
+      'category_sushi': 'Sushi',
+      'category_cake': 'Pastel',
+      'category_drinks': 'Bebidas',
+      'category_salad': 'Ensalada',
+      'popular_foods': 'Comidas Populares',
+      'all_foods': 'Todas las Comidas',
+      'added': 'Añadido',
+      'to_cart': 'al carrito'
     },
     'fr': {
       'home': 'Accueil',
@@ -106,13 +154,29 @@ class AppLocalizations {
       'login_prompt': 'Veuillez vous connecter pour continuer',
       'login_prompt_cart': 'Veuillez vous connecter pour voir votre panier',
       'login_prompt_orders': 'Veuillez vous connecter pour voir vos commandes',
-      'login_required': 'Connexion requise',
+'login_required': 'Connexion requise',
       'login_to_add_cart': 'Vous devez vous connecter pour ajouter des articles au panier',
       'cancel': 'Annuler',
       'login_success': 'Connexion réussie',
       'login_failed': 'Échec de connexion',
       'register_success': 'Inscription réussie',
-      'register_failed': 'Échec de l\'inscription'
+      'register_failed': 'Échec de l\'inscription',
+      // HomePage keys
+      'what_would_you_like_to_eat': 'Qu\'aimeriez-vous manger?',
+      'no_foods_available': 'Aucun plat disponible',
+      'what_would_you_like_to_buy': 'Qu\'aimeriez-vous acheter?',
+      'categories': 'Catégories',
+      'category_all': 'Tout',
+      'category_burger': 'Burger',
+      'category_pizza': 'Pizza',
+      'category_sushi': 'Sushi',
+      'category_cake': 'Gâteau',
+      'category_drinks': 'Boissons',
+      'category_salad': 'Salade',
+      'popular_foods': 'Plats Populaires',
+      'all_foods': 'Tous les Plats',
+      'added': 'Ajouté',
+      'to_cart': 'au panier'
     }
   };
 

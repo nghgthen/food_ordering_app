@@ -407,7 +407,7 @@ class CartPage extends StatelessWidget {
           const SizedBox(height: 12),
           _buildSummaryRow(
             'Phí vận chuyển',
-            "15000 VNĐ",
+            "15.000 VNĐ",
             isRegular: true,
           ),
           Padding(
@@ -415,7 +415,7 @@ class CartPage extends StatelessWidget {
             child: Divider(height: 1, color: Colors.orange[200]),
           ),
           _buildSummaryRow(
-            loc.t('Tổng'),
+            loc.t('total'),
             "${(cart.totalPrice + 15000).toStringAsFixed(0)} VNĐ",
             isTotal: true,
           ),
@@ -493,149 +493,166 @@ class CartPage extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.orange[50],
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(Icons.payment, color: Colors.orange[700], size: 24),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Thanh Toán',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: addressController,
-              decoration: InputDecoration(
-                labelText: "Địa chỉ giao hàng",
-                prefixIcon: const Icon(Icons.location_on_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.orange[50],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(Icons.payment, color: Colors.orange[700], size: 24),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.orange, width: 2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              value: paymentMethod,
-              decoration: InputDecoration(
-                labelText: "Phương thức thanh toán",
-                prefixIcon: const Icon(Icons.payment_outlined),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Colors.orange, width: 2),
-                ),
-              ),
-              items: const [
-                DropdownMenuItem(
-                  value: "cash",
-                  child: Text("Thanh toán khi nhận hàng"),
-                ),
-                DropdownMenuItem(
-                  value: "card",
-                  child: Text("Thẻ tín dụng/Ghi nợ"),
+                const SizedBox(width: 12),
+                const Text(
+                  'Thanh Toán',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
                 ),
               ],
-              onChanged: (val) => paymentMethod = val!,
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            ),
-            child: Text(
-              loc.t('cancel'),
-              style: const TextStyle(color: Colors.grey, fontSize: 15),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-
-              final orderItems = cart.items
-                  .map((item) => {
-                        "food_id": item.food.id,
-                        "quantity": item.quantity,
-                        "price": item.food.price,
-                      })
-                  .toList();
-
-              final totalAmount = cart.totalPrice + 15000;
-
-              final success = await _submitOrder(
-                cart,
-                addressController.text,
-                paymentMethod,
-                context,
-              );
-
-              if (success) {
-                ordersProvider.addOrder({
-                  "id": DateTime.now().millisecondsSinceEpoch,
-                  "total_amount": totalAmount,
-                  "payment_method": paymentMethod,
-                  "shipping_address": addressController.text,
-                  "status": "pending",
-                  "items": orderItems,
-                });
-
-                cart.clearCart();
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: const Row(
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.white),
-                        SizedBox(width: 12),
-                        Text('Đặt hàng thành công!'),
+            content: SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width * 0.8,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: addressController,
+                      maxLines: null,
+                      decoration: InputDecoration(
+                        labelText: "Địa chỉ giao hàng",
+                        prefixIcon: const Icon(Icons.location_on_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.orange, width: 2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: paymentMethod,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: "Phương thức thanh toán",
+                        prefixIcon: const Icon(Icons.payment_outlined),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Colors.orange, width: 2),
+                        ),
+                      ),
+                      items: const [
+                        DropdownMenuItem(
+                          value: "cash",
+                          child: Text("Thanh toán khi nhận hàng"),
+                        ),
+                        DropdownMenuItem(
+                          value: "card",
+                          child: Text("Thẻ tín dụng/Ghi nợ"),
+                        ),
                       ],
+                      onChanged: (val) {
+                        setState(() {
+                          paymentMethod = val!;
+                        });
+                      },
                     ),
-                    backgroundColor: Colors.green[600],
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                );
-
-                if (onSwitchTab != null) onSwitchTab!(1);
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.orange,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                  ],
+                ),
               ),
             ),
-            child: const Text(
-              'Xác Nhận Đơn Hàng',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                child: Text(
+                  loc.t('cancel'),
+                  style: const TextStyle(color: Colors.grey, fontSize: 15),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  Navigator.pop(ctx);
+
+                  final orderItems = cart.items
+                      .map((item) => {
+                            "food_id": item.food.id,
+                            "quantity": item.quantity,
+                            "price": item.food.price,
+                          })
+                      .toList();
+
+                  final totalAmount = cart.totalPrice + 15000;
+
+                  final success = await _submitOrder(
+                    cart,
+                    addressController.text,
+                    paymentMethod,
+                    context,
+                  );
+
+                  if (success) {
+                    ordersProvider.addOrder({
+                      "id": DateTime.now().millisecondsSinceEpoch,
+                      "total_amount": totalAmount,
+                      "payment_method": paymentMethod,
+                      "shipping_address": addressController.text,
+                      "status": "pending",
+                      "items": orderItems,
+                    });
+
+                    cart.clearCart();
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: const Row(
+                          children: [
+                            Icon(Icons.check_circle, color: Colors.white),
+                            SizedBox(width: 12),
+                            Text('Đặt hàng thành công!'),
+                          ],
+                        ),
+                        backgroundColor: Colors.green[600],
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    );
+
+                    if (onSwitchTab != null) onSwitchTab!(1);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orange,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Xác Nhận Đơn Hàng',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 

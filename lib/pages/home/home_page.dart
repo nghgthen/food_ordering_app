@@ -282,7 +282,7 @@ style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
         SizedBox(
-          height: 230,
+          height: 250,
 child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: popular.length,

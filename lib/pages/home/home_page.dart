@@ -289,7 +289,7 @@ child: ListView.builder(
             itemBuilder: (context, index) {
               final food = popular[index];
               return Container(
-                width: 160,
+                width: 180,
                 margin: EdgeInsets.only(
                   right: index == popular.length - 1 ? 0 : 16,
                 ),

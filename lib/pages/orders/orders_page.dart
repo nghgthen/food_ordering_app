@@ -100,9 +100,9 @@ class _OrdersPageState extends State<OrdersPage> {
             ),
           ),
           const SizedBox(height: 24),
-          Text(
-            _translate(context, 'No orders found'),
-            style: const TextStyle(
+          const Text(
+            'Chưa có đơn hàng',
+            style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
@@ -112,7 +112,7 @@ class _OrdersPageState extends State<OrdersPage> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 48),
             child: Text(
-              _translate(context, 'Your orders will appear here'),
+              'Đơn hàng của bạn sẽ hiển thị tại đây',
               style: TextStyle(
                 color: Colors.grey[600],
                 fontSize: 14,
@@ -174,7 +174,7 @@ class _OrdersPageState extends State<OrdersPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Order #${order['id']}',
+                          'Đơn hàng #${order['id']}',
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -230,7 +230,7 @@ class _OrdersPageState extends State<OrdersPage> {
                             size: 18, color: Colors.grey[700]),
                         const SizedBox(width: 8),
                         Text(
-                          '${_getItemCount(order)} items',
+                          '${_getItemCount(order)} món',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[700],
@@ -239,7 +239,7 @@ class _OrdersPageState extends State<OrdersPage> {
                       ],
                     ),
                     Text(
-                      '\$${order['total_amount'] ?? '0'}',
+                      '${_formatPrice(order['total_amount'])} VNĐ',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -288,16 +288,16 @@ class _OrdersPageState extends State<OrdersPage> {
         // Payment Info
         _buildInfoRow(
           Icons.payment,
-          'Payment Method',
-          order['payment_method']?.toString().toUpperCase() ?? 'CASH',
+          'Phương thức thanh toán',
+          _getPaymentMethodText(order['payment_method']?.toString() ?? 'cash'),
         ),
         const SizedBox(height: 12),
 
         // Shipping Address
         _buildInfoRow(
           Icons.location_on_outlined,
-          'Shipping Address',
-          order['shipping_address'] ?? 'Not specified',
+          'Địa chỉ giao hàng',
+          order['shipping_address'] ?? 'Chưa xác định',
         ),
         const SizedBox(height: 16),
         
@@ -310,7 +310,7 @@ class _OrdersPageState extends State<OrdersPage> {
             Icon(Icons.receipt_long, size: 18, color: Colors.grey[700]),
             const SizedBox(width: 8),
             Text(
-              'Order Details',
+              'Chi tiết đơn hàng',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 15,
@@ -331,7 +331,7 @@ class _OrdersPageState extends State<OrdersPage> {
               onPressed: () => _confirmReceipt(order),
               icon: const Icon(Icons.check_circle_outline),
               label: const Text(
-                'Confirm Receipt',
+                'Xác Nhận Đã Nhận Hàng',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -387,14 +387,13 @@ class _OrdersPageState extends State<OrdersPage> {
 
   List<Widget> _buildOrderItems(dynamic items) {
     if (items == null || items is! List || items.isEmpty) {
-      return [const Text('No items')];
+      return [const Text('Không có món')];
     }
 
     return items.map<Widget>((item) {
-      // Thêm null safety cho food name
       final foodName = item['food']?['name'] ?? 
                        item['name'] ?? 
-                       'Unknown item';
+                       'Món không xác định';
       
       return Container(
         margin: const EdgeInsets.only(bottom: 8),
@@ -428,7 +427,7 @@ class _OrdersPageState extends State<OrdersPage> {
               ),
             ),
             Text(
-              '\$${item['price'] ?? 0}',
+              '${_formatPrice(item['price'])} VNĐ',
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
@@ -449,16 +448,16 @@ class _OrdersPageState extends State<OrdersPage> {
           children: [
             Icon(Icons.check_circle, color: Colors.green),
             SizedBox(width: 8),
-            Text('Confirm Receipt'),
+            Text('Xác Nhận Nhận Hàng'),
           ],
         ),
         content: Text(
-          'Have you received Order #${order['id']}?\n\nThis action will mark the order as completed.',
+          'Bạn đã nhận được Đơn hàng #${order['id']}?\n\nHành động này sẽ đánh dấu đơn hàng là đã hoàn thành.',
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
+            child: const Text('Hủy'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
@@ -466,7 +465,7 @@ class _OrdersPageState extends State<OrdersPage> {
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Confirm'),
+            child: const Text('Xác Nhận'),
           ),
         ],
       ),
@@ -484,7 +483,7 @@ class _OrdersPageState extends State<OrdersPage> {
                 children: [
                   Icon(Icons.check_circle, color: Colors.white),
                   SizedBox(width: 8),
-                  Text('Order confirmed successfully!'),
+                  Text('Xác nhận đơn hàng thành công!'),
                 ],
               ),
               backgroundColor: Colors.green,
@@ -499,7 +498,7 @@ class _OrdersPageState extends State<OrdersPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: $e'),
+              content: Text('Lỗi: $e'),
               backgroundColor: Colors.red,
             ),
           );
@@ -516,6 +515,16 @@ class _OrdersPageState extends State<OrdersPage> {
     return 0;
   }
 
+  String _formatPrice(dynamic price) {
+    if (price == null) return '0';
+    try {
+      final numPrice = price is String ? double.parse(price) : price.toDouble();
+      return numPrice.toStringAsFixed(0);
+    } catch (e) {
+      return price.toString();
+    }
+  }
+
   String _formatDate(dynamic date) {
     if (date == null) return 'N/A';
     try {
@@ -523,6 +532,17 @@ class _OrdersPageState extends State<OrdersPage> {
       return '${dt.day}/${dt.month}/${dt.year} ${dt.hour}:${dt.minute.toString().padLeft(2, '0')}';
     } catch (e) {
       return date.toString();
+    }
+  }
+
+  String _getPaymentMethodText(String method) {
+    switch (method.toLowerCase()) {
+      case 'cash':
+        return 'Thanh toán khi nhận hàng';
+      case 'card':
+        return 'Thẻ tín dụng/Ghi nợ';
+      default:
+        return method.toUpperCase();
     }
   }
 
@@ -544,15 +564,15 @@ class _OrdersPageState extends State<OrdersPage> {
   String _getStatusText(String status) {
     switch (status) {
       case 'completed':
-        return 'COMPLETED';
+        return 'ĐÃ HOÀN THÀNH';
       case 'processing':
-        return 'PROCESSING';
+        return 'ĐANG XỬ LÝ';
       case 'shipped':
-        return 'SHIPPED';
+        return 'ĐANG GIAO';
       case 'cancelled':
-        return 'CANCELLED';
+        return 'ĐÃ HỦY';
       default:
-        return 'PENDING';
+        return 'CHỜ XỬ LÝ';
     }
   }
 

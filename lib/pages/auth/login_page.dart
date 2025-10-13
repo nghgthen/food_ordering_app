@@ -112,7 +112,7 @@ class _LoginPageState extends State<LoginPage> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     prefixIcon: Icon(Icons.email),
-                    labelText: "Email Address",
+                    labelText: "Địa chỉ Email",
                     border: OutlineInputBorder(),
                   ),
                   validator: (value) {
@@ -133,7 +133,7 @@ class _LoginPageState extends State<LoginPage> {
                   obscureText: _obscure,
                   decoration: InputDecoration(
                     prefixIcon: const Icon(Icons.lock),
-                    labelText: "Password",
+                    labelText: "Mật khẩu",
                     border: const OutlineInputBorder(),
                     suffixIcon: IconButton(
                       icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
@@ -158,7 +158,7 @@ class _LoginPageState extends State<LoginPage> {
                     onPressed: () {
                       // TODO: Implement forgot password
                     },
-                    child: const Text("Forgot your password?"),
+                    child: const Text("Quên mật khẩu?"),
                   ),
                 ),
 
@@ -187,7 +187,7 @@ class _LoginPageState extends State<LoginPage> {
                         child: authProvider.isLoading
                             ? const CircularProgressIndicator(color: Colors.white)
                             : const Text(
-                                "SIGN IN",
+                                "ĐĂNG NHẬP",
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -207,7 +207,7 @@ class _LoginPageState extends State<LoginPage> {
                     Expanded(child: Divider()),
                     Padding(
                       padding: EdgeInsets.symmetric(horizontal: 8),
-                      child: Text("Or"),
+                      child: Text("Hoặc"),
                     ),
                     Expanded(child: Divider()),
                   ],
@@ -238,7 +238,7 @@ class _LoginPageState extends State<LoginPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text("Don't have an account? "),
+                    const Text("Chưa có tài khoản? "),
                     GestureDetector(
                       onTap: () {
                         Navigator.pushReplacement(
@@ -247,7 +247,7 @@ class _LoginPageState extends State<LoginPage> {
                         );
                       },
                       child: const Text(
-                        "Sign Up",
+                        "Đăng ký",
                         style: TextStyle(
                           color: Colors.pink,
                           fontWeight: FontWeight.bold,

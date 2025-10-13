@@ -80,8 +80,8 @@ class _AppRootState extends State<AppRoot> {
       themeMode: theme.isDark ? ThemeMode.dark : ThemeMode.light,
       locale: localeProv.locale,
       supportedLocales: const [
-        Locale('en'),
         Locale('vi'),
+        Locale('en'),
         Locale('es'),
         Locale('fr'),
       ],

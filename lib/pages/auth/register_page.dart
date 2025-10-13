@@ -73,7 +73,7 @@ class _RegisterPageState extends State<RegisterPage> {
                     Image.asset("assets/images/foods/logo.png", height: 80),
                     const SizedBox(height: 12),
                     const Text(
-                      "Create Account",
+                      "Tạo tài khoản",
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
@@ -90,7 +90,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 controller: nameCtrl,
                 decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.person),
-                  labelText: "Full Name",
+                  labelText: "Họ và tên",
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -101,7 +101,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 controller: emailCtrl,
                 decoration: const InputDecoration(
                   prefixIcon: Icon(Icons.email),
-                  labelText: "Email Address",
+                  labelText: "Địa chỉ Email",
                   border: OutlineInputBorder(),
                 ),
               ),
@@ -113,7 +113,7 @@ class _RegisterPageState extends State<RegisterPage> {
                 obscureText: _obscure,
                 decoration: InputDecoration(
                   prefixIcon: const Icon(Icons.lock),
-                  labelText: "Password",
+                  labelText: "Mật khẩu",
                   border: const OutlineInputBorder(),
                   suffixIcon: IconButton(
                     icon: Icon(_obscure ? Icons.visibility : Icons.visibility_off),
@@ -146,7 +146,7 @@ class _RegisterPageState extends State<RegisterPage> {
                       child: _loading
                           ? const CircularProgressIndicator(color: Colors.white)
                           : const Text(
-                              "SIGN UP",
+                              "ĐĂNG KÝ",
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -164,13 +164,13 @@ class _RegisterPageState extends State<RegisterPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Text("Already have an account? "),
+                  const Text("Đã có tài khoản? "),
                   GestureDetector(
                     onTap: () {
                       Navigator.pop(context); // quay lại LoginPage
                     },
                     child: const Text(
-                      "Sign In",
+                      "Đăng nhập",
                       style: TextStyle(
                         color: Colors.pink,
                         fontWeight: FontWeight.bold,

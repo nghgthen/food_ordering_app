@@ -193,7 +193,7 @@ class AppLocalizations {
 
   static AppLocalizations of(BuildContext context) {
     return Localizations.of<AppLocalizations>(context, AppLocalizations) ??
-        AppLocalizations(const Locale('en')); // fallback
+        AppLocalizations(const Locale('vi')); // fallback
   }
 }
 
@@ -202,7 +202,7 @@ class AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
 
   @override
   bool isSupported(Locale locale) =>
-      ['en', 'vi', 'es', 'fr'].contains(locale.languageCode);
+      ['vi', 'en', 'es', 'fr'].contains(locale.languageCode);
 
   @override
   Future<AppLocalizations> load(Locale locale) async => AppLocalizations(locale);

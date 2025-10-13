@@ -195,7 +195,7 @@ class CartPage extends StatelessWidget {
               Icon(Icons.shopping_bag_outlined, color: Colors.orange[700], size: 24),
               const SizedBox(width: 12),
               Text(
-                'Your Food Cart',
+                'Giỏ Hàng Của Bạn',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -210,7 +210,7 @@ class CartPage extends StatelessWidget {
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: Text(
-                  '${cart.items.length} ${cart.items.length == 1 ? 'item' : 'items'}',
+                  '${cart.items.length} ${cart.items.length == 1 ? 'món' : 'món'}',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
@@ -314,7 +314,7 @@ class CartPage extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    "\$${item.food.price.toStringAsFixed(2)}",
+                    "${item.food.price.toStringAsFixed(0)} VNĐ",
                     style: TextStyle(
                       color: Colors.orange[700],
                       fontWeight: FontWeight.bold,
@@ -400,14 +400,14 @@ class CartPage extends StatelessWidget {
       child: Column(
         children: [
           _buildSummaryRow(
-            'Subtotal',
-            "\$${cart.totalPrice.toStringAsFixed(2)}",
+            'Tạm tính',
+            "${cart.totalPrice.toStringAsFixed(0)} VNĐ",
             isRegular: true,
           ),
           const SizedBox(height: 12),
           _buildSummaryRow(
-            'Delivery Fee',
-            "\$0.99",
+            'Phí vận chuyển',
+            "15000 VNĐ",
             isRegular: true,
           ),
           Padding(
@@ -415,8 +415,8 @@ class CartPage extends StatelessWidget {
             child: Divider(height: 1, color: Colors.orange[200]),
           ),
           _buildSummaryRow(
-            loc.t('total'),
-            "\$${(cart.totalPrice + 0.99).toStringAsFixed(2)}",
+            loc.t('Tổng'),
+            "${(cart.totalPrice + 15000).toStringAsFixed(0)} VNĐ",
             isTotal: true,
           ),
         ],
@@ -472,7 +472,7 @@ class CartPage extends StatelessWidget {
               const Icon(Icons.check_circle_outline, size: 22),
               const SizedBox(width: 8),
               const Text(
-                'Proceed to Checkout',
+                'Tiến Hành Thanh Toán',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
@@ -507,7 +507,7 @@ class CartPage extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             const Text(
-              'Checkout',
+              'Thanh Toán',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
           ],
@@ -518,7 +518,7 @@ class CartPage extends StatelessWidget {
             TextField(
               controller: addressController,
               decoration: InputDecoration(
-                labelText: "Shipping Address",
+                labelText: "Địa chỉ giao hàng",
                 prefixIcon: const Icon(Icons.location_on_outlined),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -533,7 +533,7 @@ class CartPage extends StatelessWidget {
             DropdownButtonFormField<String>(
               value: paymentMethod,
               decoration: InputDecoration(
-                labelText: "Payment Method",
+                labelText: "Phương thức thanh toán",
                 prefixIcon: const Icon(Icons.payment_outlined),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -546,11 +546,11 @@ class CartPage extends StatelessWidget {
               items: const [
                 DropdownMenuItem(
                   value: "cash",
-                  child: Text("Cash on Delivery"),
+                  child: Text("Thanh toán khi nhận hàng"),
                 ),
                 DropdownMenuItem(
                   value: "card",
-                  child: Text("Credit/Debit Card"),
+                  child: Text("Thẻ tín dụng/Ghi nợ"),
                 ),
               ],
               onChanged: (val) => paymentMethod = val!,
@@ -580,7 +580,7 @@ class CartPage extends StatelessWidget {
                       })
                   .toList();
 
-              final totalAmount = cart.totalPrice + 0.99;
+              final totalAmount = cart.totalPrice + 15000;
 
               final success = await _submitOrder(
                 cart,
@@ -607,7 +607,7 @@ class CartPage extends StatelessWidget {
                       children: [
                         Icon(Icons.check_circle, color: Colors.white),
                         SizedBox(width: 12),
-                        Text('Order placed successfully!'),
+                        Text('Đặt hàng thành công!'),
                       ],
                     ),
                     backgroundColor: Colors.green[600],
@@ -630,7 +630,7 @@ class CartPage extends StatelessWidget {
               ),
             ),
             child: const Text(
-              'Confirm Order',
+              'Xác Nhận Đơn Hàng',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
             ),
           ),
@@ -648,7 +648,7 @@ class CartPage extends StatelessWidget {
     if (token == null || token.isEmpty) {
       debugPrint("❌ Token is null or empty");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid token, please login again!')),
+        const SnackBar(content: Text('Token không hợp lệ, vui lòng đăng nhập lại!')),
       );
       return false;
     }
@@ -656,7 +656,7 @@ class CartPage extends StatelessWidget {
     if (userId == null) {
       debugPrint("❌ UserId is null");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Invalid user ID, please login again!')),
+        const SnackBar(content: Text('ID người dùng không hợp lệ, vui lòng đăng nhập lại!')),
       );
       return false;
     }
@@ -664,7 +664,7 @@ class CartPage extends StatelessWidget {
     final url = Uri.parse("http://10.240.165.238:8000/api/orders");
     final orderData = {
       "user_id": userId,
-      "total_amount": cart.totalPrice + 0.99,
+      "total_amount": cart.totalPrice + 15000,
       "status": "pending",
       "shipping_address": address,
       "payment_method": paymentMethod,
@@ -695,7 +695,7 @@ class CartPage extends StatelessWidget {
     } else {
       debugPrint("❌ Order failed: ${response.body}");
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Order failed!')),
+        const SnackBar(content: Text('Đặt hàng thất bại!')),
       );
       return false;
     }

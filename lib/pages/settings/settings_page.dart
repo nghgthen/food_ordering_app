@@ -89,7 +89,7 @@ class SettingsPage extends StatelessWidget {
           title: Text(loc.t('language')),
           content: Column(
             mainAxisSize: MainAxisSize.min,
-            children: ['en', 'vi', 'es', 'fr'].map((code) {
+            children: ['vi', 'en', 'es', 'fr'].map((code) {
               return ListTile(
                 title: Text(code.toUpperCase()),
                 onTap: () {

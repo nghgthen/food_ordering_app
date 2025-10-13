@@ -135,7 +135,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          '${widget.food.reviewCount} reviews',
+                          '${widget.food.reviewCount} đánh giá',
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 14,
@@ -150,7 +150,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
                     // Mô tả món ăn
                     const Text(
-                      'Description',
+                      'Mô tả',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -161,7 +161,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                     Text(
                       widget.food.description.isNotEmpty
                           ? widget.food.description
-                          : "Delicious food prepared with fresh ingredients and traditional recipes.",
+                          : "Món ăn ngon được chế biến từ nguyên liệu tươi ngon và công thức truyền thống.",
                       style: TextStyle(
                         fontSize: 15,
                         color: Colors.grey[700],
@@ -176,7 +176,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Quantity',
+                          'Số lượng',
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -256,12 +256,12 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Total Price',
+                    Text('Tổng giá',
                         style: TextStyle(
                             fontSize: 14, color: Colors.grey[600])),
                     const SizedBox(height: 4),
                     Text(
-                      '\$${totalPrice.toStringAsFixed(2)}',
+                     '${totalPrice.toStringAsFixed(0)} VND',
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -294,7 +294,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Text(
-                          "Added $quantity x ${widget.food.name} to cart",
+                          "Đã thêm $quantity x ${widget.food.name} vào giỏ hàng",
                         ),
                         behavior: SnackBarBehavior.floating,
                         shape: RoundedRectangleBorder(
@@ -313,7 +313,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                       Icon(Icons.shopping_bag_outlined, size: 22),
                       SizedBox(width: 8),
                       Text(
-                        "Add to Cart",
+                        "Thêm vào giỏ",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.bold,

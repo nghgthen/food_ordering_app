@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+
 import '../../models/food.dart';
 import '../../providers/cart_provider.dart';
 
@@ -14,6 +17,60 @@ class FoodDetailPage extends StatefulWidget {
 
 class _FoodDetailPageState extends State<FoodDetailPage> {
   int quantity = 1;
+  List<Food> suggestions = []; // ✅ Thay đổi: Lưu object Food đầy đủ
+  bool isLoading = false;
+
+  // 🔹 Hàm gọi API FastAPI để lấy gợi ý món ăn kèm
+  Future<void> fetchSuggestions() async {
+    try {
+      setState(() => isLoading = true);
+      final url = Uri.parse(
+        'http://10.75.205.238:8001/ai_pair?food_name=${Uri.encodeComponent(widget.food.name)}',
+      );
+      final response = await http.get(url);
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        
+        if (data['error'] != null) {
+          debugPrint('❌ API trả về lỗi: ${data['error']}');
+          return;
+        }
+
+        // ✅ Lấy thông tin đầy đủ món ăn từ Laravel API
+        if (data['pair_with'] != null) {
+          final List<dynamic> pairWith = data['pair_with'];
+          List<Food> tempSuggestions = [];
+          
+          for (var item in pairWith) {
+            // Gọi Laravel API để lấy thông tin đầy đủ món ăn
+            final foodUrl = Uri.parse('http://10.75.205.238:8000/api/foods/${item['id']}');
+            final foodResponse = await http.get(foodUrl);
+            
+            if (foodResponse.statusCode == 200) {
+              final foodData = json.decode(foodResponse.body);
+              tempSuggestions.add(Food.fromJson(foodData));
+            }
+          }
+          
+          suggestions = tempSuggestions;
+          debugPrint('✅ Đã load ${suggestions.length} gợi ý');
+        }
+      } else {
+        debugPrint('❌ Lỗi khi lấy gợi ý: ${response.statusCode}');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Lỗi kết nối: $e');
+    } finally {
+      setState(() => isLoading = false);
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    fetchSuggestions();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -95,7 +152,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Tên món ăn
+                    // ===== Tên món ăn =====
                     Text(
                       widget.food.name,
                       style: const TextStyle(
@@ -107,7 +164,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Rating và Review
+                    // ===== Rating và Review =====
                     Row(
                       children: [
                         Container(
@@ -148,7 +205,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                     Container(height: 1, color: Colors.grey[200]),
                     const SizedBox(height: 24),
 
-                    // Mô tả món ăn
+                    // ===== Mô tả =====
                     const Text(
                       'Mô tả',
                       style: TextStyle(
@@ -171,7 +228,155 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
 
                     const SizedBox(height: 32),
 
-                    // Chọn số lượng
+                    // ===== Gợi ý món ăn kèm (AI) =====
+                    const Text(
+                      'Gợi ý ăn kèm',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // ✅ Hiển thị gợi ý với hình ảnh và nút thêm vào giỏ
+                    if (isLoading)
+                      const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Color(0xFFEECECC),
+                            ),
+                          ),
+                        ),
+                      )
+                    else if (suggestions.isEmpty)
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.grey[600]),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Không có gợi ý nào phù hợp.',
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Column(
+                        children: suggestions.map((food) {
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: Colors.grey[300]!,
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                // Hình ảnh món ăn
+                                ClipRRect(
+                                  borderRadius: const BorderRadius.only(
+                                    topLeft: Radius.circular(16),
+                                    bottomLeft: Radius.circular(16),
+                                  ),
+                                  child: food.image.isNotEmpty
+                                      ? Image.asset(
+                                          'assets/images/${food.image}',
+                                          width: 90,
+                                          height: 90,
+                                          fit: BoxFit.cover,
+                                        )
+                                      : Container(
+                                          width: 90,
+                                          height: 90,
+                                          color: Colors.grey[200],
+                                          child: const Icon(
+                                            Icons.fastfood,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                ),
+                                
+                                // Thông tin món ăn
+                                Expanded(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          food.name,
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.black87,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          '${food.price.toStringAsFixed(0)} VND',
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: Color(0xFFFF4444),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                
+                                // Nút thêm vào giỏ
+                                Padding(
+                                  padding: const EdgeInsets.only(right: 12),
+                                  child: IconButton(
+                                    onPressed: () {
+                                      final cartProvider = context.read<CartProvider>();
+                                      cartProvider.addToCart(food);
+                                      
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Đã thêm ${food.name} vào giỏ hàng'),
+                                          duration: const Duration(seconds: 1),
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(10),
+                                          ),
+                                          backgroundColor: Colors.black87,
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.add_shopping_cart),
+                                    color: const Color(0xFFEECECC),
+                                    iconSize: 24,
+                                    style: IconButton.styleFrom(
+                                      backgroundColor: const Color(0xFFEECECC).withOpacity(0.2),
+                                      padding: const EdgeInsets.all(8),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                    const SizedBox(height: 32),
+
+                    // ===== Chọn số lượng =====
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
@@ -261,7 +466,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                             fontSize: 14, color: Colors.grey[600])),
                     const SizedBox(height: 4),
                     Text(
-                     '${totalPrice.toStringAsFixed(0)} VND',
+                      '${totalPrice.toStringAsFixed(0)} VND',
                       style: const TextStyle(
                         fontSize: 28,
                         fontWeight: FontWeight.bold,

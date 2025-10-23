@@ -6,13 +6,12 @@ import 'providers/font_provider.dart';
 import 'providers/food_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/auth_provider.dart';
-import 'providers/orders_provider.dart'; // ✅ thêm import
+import 'providers/orders_provider.dart';
 import 'services/food_service.dart';
 import 'pages/home/home_page.dart';
 import 'pages/orders/orders_page.dart';
 import 'pages/cart/cart_page.dart';
 import 'pages/settings/settings_page.dart';
-import 'pages/auth/login_page.dart';
 import 'l10n/app_localizations.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -26,7 +25,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => FoodProvider(foodService: FoodService())),
         ChangeNotifierProvider(create: (_) => CartProvider()),
         ChangeNotifierProvider(create: (_) => AuthProvider()..checkLogin()),
-        ChangeNotifierProvider(create: (_) => OrdersProvider()), // ✅ thêm OrdersProvider
+        ChangeNotifierProvider(create: (_) => OrdersProvider()),
       ],
       child: const AppRoot(),
     ),
@@ -41,7 +40,6 @@ class AppRoot extends StatefulWidget {
 
 class _AppRootState extends State<AppRoot> {
   int _currentIndex = 0;
-  DateTime? _lastTapTime;
 
   @override
   Widget build(BuildContext context) {
@@ -102,7 +100,6 @@ class _AppRootState extends State<AppRoot> {
   }
 
   Widget _buildBottomNavigationBar(BuildContext context) {
-    final auth = context.watch<AuthProvider>();
     final cart = context.watch<CartProvider>();
 
     return Container(
@@ -117,16 +114,16 @@ class _AppRootState extends State<AppRoot> {
       ),
       child: ClipRRect(
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(16),
-          topRight: Radius.circular(16),
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
         ),
         child: BottomNavigationBar(
           currentIndex: _currentIndex,
           type: BottomNavigationBarType.fixed,
           elevation: 8.0,
-          selectedFontSize: 12,
+          selectedFontSize: 13,
           unselectedFontSize: 12,
-          onTap: (index) => _onTabTapped(index, context, auth),
+          onTap: (index) => setState(() => _currentIndex = index),
           items: [
             _buildNavItem(
               icon: Icons.home_outlined,
@@ -134,19 +131,15 @@ class _AppRootState extends State<AppRoot> {
               label: AppLocalizations.of(context)?.t('home') ?? 'Home',
             ),
             _buildNavItem(
-              icon: Icons.list_alt_outlined,
-              activeIcon: Icons.list_alt,
+              icon: Icons.receipt_long_outlined,
+              activeIcon: Icons.receipt_long,
               label: AppLocalizations.of(context)?.t('orders') ?? 'Orders',
-              requiresAuth: true,
-              isLoggedIn: auth.isLoggedIn,
             ),
             _buildNavItem(
               icon: Icons.shopping_cart_outlined,
               activeIcon: Icons.shopping_cart,
               label: AppLocalizations.of(context)?.t('cart') ?? 'Cart',
               badge: cart.items.isNotEmpty ? cart.items.length.toString() : null,
-              requiresAuth: true,
-              isLoggedIn: auth.isLoggedIn,
             ),
             _buildNavItem(
               icon: Icons.settings_outlined,
@@ -164,38 +157,25 @@ class _AppRootState extends State<AppRoot> {
     required IconData activeIcon,
     required String label,
     String? badge,
-    bool requiresAuth = false,
-    bool isLoggedIn = true,
   }) {
-    Color? iconColor = requiresAuth && !isLoggedIn ? Colors.grey : null;
-
     return BottomNavigationBarItem(
       icon: Stack(
         clipBehavior: Clip.none,
         children: [
-          Icon(icon, color: iconColor),
-          if (requiresAuth && !isLoggedIn)
-            Positioned(
-              right: -4,
-              top: -4,
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: const BoxDecoration(
-                  color: Colors.orange,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.lock, size: 10, color: Colors.white),
-              ),
-            ),
+          Icon(icon, size: 26),
           if (badge != null && badge.isNotEmpty)
             Positioned(
-              right: -8,
-              top: -4,
+              right: -10,
+              top: -5,
               child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
                   color: Colors.red,
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 18,
+                  minHeight: 18,
                 ),
                 child: Text(
                   badge,
@@ -204,6 +184,7 @@ class _AppRootState extends State<AppRoot> {
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ),
@@ -212,29 +193,20 @@ class _AppRootState extends State<AppRoot> {
       activeIcon: Stack(
         clipBehavior: Clip.none,
         children: [
-          Icon(activeIcon, color: requiresAuth && !isLoggedIn ? Colors.grey : const Color(0xFFE53935)),
-          if (requiresAuth && !isLoggedIn)
-            Positioned(
-              right: -4,
-              top: -4,
-              child: Container(
-                padding: const EdgeInsets.all(2),
-                decoration: const BoxDecoration(
-                  color: Colors.orange,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.lock, size: 10, color: Colors.white),
-              ),
-            ),
+          Icon(activeIcon, size: 26),
           if (badge != null && badge.isNotEmpty)
             Positioned(
-              right: -8,
-              top: -4,
+              right: -10,
+              top: -5,
               child: Container(
-                padding: const EdgeInsets.all(4),
-                decoration: const BoxDecoration(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
                   color: Colors.red,
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 18,
+                  minHeight: 18,
                 ),
                 child: Text(
                   badge,
@@ -243,6 +215,7 @@ class _AppRootState extends State<AppRoot> {
                     fontSize: 10,
                     fontWeight: FontWeight.bold,
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ),
             ),
@@ -250,51 +223,5 @@ class _AppRootState extends State<AppRoot> {
       ),
       label: label,
     );
-  }
-
-  Future<void> _onTabTapped(int index, BuildContext context, AuthProvider auth) async {
-    // Prevent double tap
-    final now = DateTime.now();
-    if (_lastTapTime != null && now.difference(_lastTapTime!) < const Duration(milliseconds: 300)) {
-      return;
-    }
-    _lastTapTime = now;
-
-    // Check if the tab requires authentication (Orders = 1, Cart = 2)
-    if ((index == 1 || index == 2) && !auth.isLoggedIn) {
-      // Show login dialog
-      final result = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(AppLocalizations.of(context)?.t('login_required') ?? 'Login Required'),
-          content: Text(AppLocalizations.of(context)?.t('login_to_continue') ?? 'Please login to access this feature'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(AppLocalizations.of(context)?.t('cancel') ?? 'Cancel'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(AppLocalizations.of(context)?.t('login') ?? 'Login'),
-            ),
-          ],
-        ),
-      );
-
-      if (result == true) {
-        // Navigate to login page
-        final loginResult = await Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const LoginPage()),
-        );
-
-        // If login was successful, navigate to the desired tab
-        if (loginResult == true && mounted) {
-          setState(() => _currentIndex = index);
-        }
-      }
-      return;
-    }
-
-    setState(() => _currentIndex = index);
   }
 }

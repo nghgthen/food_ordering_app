@@ -678,7 +678,7 @@ class CartPage extends StatelessWidget {
       return false;
     }
 
-    final url = Uri.parse("http://10.240.165.238:8000/api/orders");
+    final url = Uri.parse("http://10.75.205.238:8000/api/orders");
     final orderData = {
       "user_id": userId,
       "total_amount": cart.totalPrice + 15000,

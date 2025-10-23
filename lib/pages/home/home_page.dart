@@ -4,17 +4,14 @@ import 'package:provider/provider.dart';
 import '../../models/food.dart';
 import '../../providers/food_provider.dart';
 import '../../providers/cart_provider.dart';
-import '../../services/auth_service.dart';
 import '../../widgets/food_card.dart';
 import '../food/food_detail_page.dart';
 import '../food/popular_foods_page.dart';
 import '../food/all_foods_page.dart';
 import '../../l10n/app_localizations.dart';
-import '../auth/login_page.dart'; // THÊM IMPORT NÀY
 
 class HomePage extends StatefulWidget {
-  final VoidCallback? onRequestLogin; // CALLBACK ĐỂ MỞ LOGIN
-  const HomePage({super.key, this.onRequestLogin});
+  const HomePage({super.key});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -23,7 +20,6 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String _selectedCategory = 'All';
 
-  // Map tên category hiển thị -> categoryId
   final Map<String, int> categoryMap = {
     'All': 0,
     'Burger': 1,
@@ -40,13 +36,8 @@ class _HomePageState extends State<HomePage> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
         await context.read<FoodProvider>().loadFoods();
-        final foods = context.read<FoodProvider>().foods;
-        print('Foods loaded: ${foods.length}');
-        for (var f in foods) {
-          print(' - ${f.name} (categoryId: ${f.categoryId})');
-        }
       } catch (e) {
-        print('Error loading foods: $e');
+        debugPrint('Error loading foods: $e');
       }
     });
   }
@@ -58,55 +49,19 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _onAddToCart(Food food) async {
-    final auth = AuthService();
-    final isLoggedIn = await auth.isLoggedIn;
-    final loc = AppLocalizations.of(context);
-
-    if (!isLoggedIn) {
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: Text(loc.t('login_required')),
-          content: Text(loc.t('login_to_add_cart')),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text(loc.t('cancel')),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx); // ĐÓNG DIALOG TRƯỚC
-                _navigateToLogin(); // ĐIỀU HƯỚNG ĐẾN LOGIN
-              },
-              child: Text(loc.t('login')),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
+  // ✅ THÊM VÀO GIỎ - KHÔNG LOGIN
+  void _onAddToCart(Food food) {
     context.read<CartProvider>().addToCart(food);
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${loc.t('added')} ${food.name} ${loc.t('to_cart')}'),
-        duration: const Duration(seconds: 1),
+        content: Text('✓ ${food.name} đã thêm vào giỏ hàng'),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.green,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
-  }
-
-  // HÀM MỚI: XỬ LÝ ĐIỀU HƯỚNG ĐẾN LOGIN PAGE
-  void _navigateToLogin() {
-    if (widget.onRequestLogin != null) {
-      // SỬ DỤNG CALLBACK TỪ PARENT NẾU CÓ
-      widget.onRequestLogin!();
-    } else {
-// FALLBACK: TỰ ĐIỀU HƯỚNG NẾU KHÔNG CÓ CALLBACK
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const LoginPage()),
-      );
-    }
   }
 
   @override
@@ -114,129 +69,228 @@ class _HomePageState extends State<HomePage> {
     final foodProvider = context.watch<FoodProvider>();
     final loc = AppLocalizations.of(context);
 
-    // Lọc món theo categoryId
     final selectedId = categoryMap[_selectedCategory] ?? 0;
     final foods = (selectedId == 0)
         ? foodProvider.foods
         : foodProvider.getFoodsByCategory(selectedId);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          loc.t('what_would_you_like_to_eat'),
-          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black,
-        automaticallyImplyLeading: false,
-      ),
+      backgroundColor: Colors.grey[50],
       body: foodProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : foods.isEmpty
-              ? Center(child: Text(loc.t('no_foods_available')))
-              : SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSearchBar(),
-                      const SizedBox(height: 24),
-                      _buildCategories(),
-                      const SizedBox(height: 24),
-                      _buildPopularFoods(foodProvider),
-                      const SizedBox(height: 24),
-                      _buildAllFoods(foods),
-                    ],
+          ? const Center(child: CircularProgressIndicator(color: Color(0xFFE53935)))
+          : CustomScrollView(
+              slivers: [
+                // App Bar với Logo
+                SliverAppBar(
+                  expandedHeight: 140,
+                  floating: true,
+                  pinned: false,
+                  backgroundColor: Colors.white,
+                  elevation: 2,
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Container(
+                      padding: const EdgeInsets.fromLTRB(20, 50, 20, 16),
+                      child: Row(
+                        children: [
+                          // ✅ LOGO
+                          Image.asset(
+                            'assets/images/foods/logo.png',
+                            height: 50,
+                            width: 50,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                height: 50,
+                                width: 50,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFE53935),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(Icons.restaurant, color: Colors.white, size: 30),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Chào mừng! 👋',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[600],
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  loc.t('what_would_you_like_to_eat'),
+                                  style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
+
+                // Search Bar
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                    child: _buildSearchBar(),
+                  ),
+                ),
+
+                // Categories
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(left: 16, top: 16),
+                    child: _buildCategories(),
+                  ),
+                ),
+
+                // Popular Foods
+                if (foodProvider.popularFoods.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 16, top: 24),
+                      child: _buildPopularFoods(foodProvider),
+                    ),
+                  ),
+
+                // All Foods
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: _buildAllFoods(foods),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 
   Widget _buildSearchBar() {
-    final loc = AppLocalizations.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.grey.shade100,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: TextField(
         decoration: InputDecoration(
-          hintText: loc.t('what_would_you_like_to_buy'),
+          hintText: 'Tìm kiếm món ăn...',
+          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
           border: InputBorder.none,
-          icon: const Icon(Icons.search, color: Colors.grey),
-          suffixIcon: const Icon(Icons.filter_list, color: Colors.grey),
+          icon: const Icon(Icons.search, color: Color(0xFFE53935), size: 22),
         ),
       ),
     );
   }
 
   Widget _buildCategories() {
-    final loc = AppLocalizations.of(context);
     final categories = categoryMap.keys.toList();
     final icons = [
-      Icons.apps,
-      Icons.fastfood,
-      Icons.local_pizza,
-      Icons.set_meal,
-      Icons.cake,
-      Icons.local_drink,
-      Icons.eco,
+      Icons.apps_rounded,
+      Icons.lunch_dining_rounded,
+      Icons.local_pizza_rounded,
+      Icons.set_meal_rounded,
+      Icons.cake_rounded,
+      Icons.local_cafe_rounded,
+      Icons.eco_rounded,
     ];
     final colors = [
-      Colors.grey,
-      Colors.orange,
-      Colors.red,
-      Colors.blue,
-      Colors.purple,
-      Colors.green,
-      Colors.lightGreen,
+      const Color(0xFF757575),
+      const Color(0xFFFF9800),
+      const Color(0xFFE53935),
+      const Color(0xFF2196F3),
+      const Color(0xFF9C27B0),
+      const Color(0xFF4CAF50),
+      const Color(0xFF8BC34A),
     ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          loc.t('categories'),
-style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: Text(
+            'Danh mục',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
         ),
-        const SizedBox(height: 16),
         SizedBox(
-          height: 90,
+          height: 85,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: categories.length,
+            padding: const EdgeInsets.only(right: 16),
             itemBuilder: (context, index) {
               final category = categories[index];
               final isSelected = _selectedCategory == category;
               return GestureDetector(
                 onTap: () => setState(() => _selectedCategory = category),
                 child: Container(
-                  width: 80,
-                  margin: const EdgeInsets.only(right: 12),
-                  padding: const EdgeInsets.all(8),
+                  width: 75,
+                  margin: const EdgeInsets.only(right: 10),
                   decoration: BoxDecoration(
-                    color: isSelected
-                        ? colors[index].withOpacity(0.6)
-                        : colors[index].withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                    border: isSelected
-                        ? Border.all(color: colors[index], width: 2)
+                    gradient: isSelected
+                        ? LinearGradient(
+                            colors: [colors[index], colors[index].withOpacity(0.7)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          )
                         : null,
+                    color: isSelected ? null : Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? colors[index] : Colors.grey[300]!,
+                      width: isSelected ? 2 : 1,
+                    ),
+                    boxShadow: [
+                      if (isSelected)
+                        BoxShadow(
+                          color: colors[index].withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                    ],
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(icons[index], color: colors[index], size: 28),
+                      Icon(
+                        icons[index],
+                        color: isSelected ? Colors.white : colors[index],
+                        size: 28,
+                      ),
                       const SizedBox(height: 6),
                       Text(
-                        loc.t('category_${category.toLowerCase()}'),
+                        category,
                         style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 12,
-                          color: colors[index],
+                          fontWeight: FontWeight.w600,
+                          fontSize: 11,
+                          color: isSelected ? Colors.white : colors[index],
                         ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
@@ -250,49 +304,60 @@ style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
   }
 
   Widget _buildPopularFoods(FoodProvider foodProvider) {
-    final loc = AppLocalizations.of(context);
     final popular = foodProvider.popularFoods;
-    if (popular.isEmpty) return const SizedBox();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              loc.t('popular_foods'),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PopularFoodsPage(foods: popular),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12, right: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Row(
+                children: [
+                  Icon(Icons.local_fire_department, color: Color(0xFFE53935), size: 22),
+                  SizedBox(width: 6),
+                  Text(
+                    'Phổ biến',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
                   ),
-                );
-              },
-              child: Text(
-                loc.t('see_all'),
-                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
+                ],
               ),
-            ),
-          ],
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => PopularFoodsPage(foods: popular)),
+                  );
+                },
+                child: const Text(
+                  'Xem tất cả',
+                  style: TextStyle(
+                    color: Color(0xFFE53935),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 16),
         SizedBox(
-          height: 250,
-child: ListView.builder(
+          height: 240,
+          child: ListView.builder(
             scrollDirection: Axis.horizontal,
             itemCount: popular.length,
+            padding: const EdgeInsets.only(right: 16),
             itemBuilder: (context, index) {
               final food = popular[index];
               return Container(
-                width: 180,
-                margin: EdgeInsets.only(
-                  right: index == popular.length - 1 ? 0 : 16,
-                ),
+                width: 160,
+                margin: const EdgeInsets.only(right: 12),
                 child: FoodCard(
                   food: food,
                   onTap: () => _onFoodTap(food),
@@ -307,42 +372,46 @@ child: ListView.builder(
   }
 
   Widget _buildAllFoods(List<Food> foods) {
-    final loc = AppLocalizations.of(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    if (foods.isEmpty) {
+      return Center(
+        child: Column(
           children: [
+            const SizedBox(height: 40),
+            Icon(Icons.food_bank_outlined, size: 60, color: Colors.grey[400]),
+            const SizedBox(height: 12),
             Text(
-              loc.t('all_foods'),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            GestureDetector(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => AllFoodsPage(foods: foods)),
-                );
-              },
-              child: Text(
-                loc.t('see_all'),
-                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w500),
-              ),
+              'Không có món ăn',
+              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
           ],
         ),
-        const SizedBox(height: 16),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: Text(
+            'Tất cả món ăn',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+        ),
         GridView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
-            childAspectRatio: 0.72,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
+            childAspectRatio: 0.7,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
           ),
-          itemCount: foods.length, // hiển thị tất cả món
+          itemCount: foods.length,
           itemBuilder: (context, index) {
             final food = foods[index];
             return FoodCard(

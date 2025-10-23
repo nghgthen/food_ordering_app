@@ -20,16 +20,6 @@ class _OrdersPageState extends State<OrdersPage> {
         Provider.of<OrdersProvider>(context, listen: false).fetchOrders());
   }
 
-  // Helper method để lấy localization an toàn
-  String _translate(BuildContext context, String key) {
-    try {
-      final loc = AppLocalizations.of(context);
-      return loc?.t(key) ?? key;
-    } catch (e) {
-      return key; // Fallback to key nếu có lỗi
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -39,24 +29,26 @@ class _OrdersPageState extends State<OrdersPage> {
           height: 40,
           errorBuilder: (context, error, stackTrace) {
             return const Text(
-              'The Best Food',
+              'Đơn Hàng',
               style: TextStyle(
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.orange,
+                color: Colors.black87,
               ),
             );
           },
         ),
         backgroundColor: Colors.white,
         foregroundColor: Colors.black,
-        elevation: 0,
+        elevation: 2,
         centerTitle: true,
       ),
       body: Consumer<OrdersProvider>(
         builder: (context, ordersProvider, child) {
           if (ordersProvider.isLoading) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: CircularProgressIndicator(color: Color(0xFFE53935)),
+            );
           }
 
           if (ordersProvider.orders.isEmpty) {
@@ -65,6 +57,7 @@ class _OrdersPageState extends State<OrdersPage> {
 
           return RefreshIndicator(
             onRefresh: () => ordersProvider.fetchOrders(),
+            color: const Color(0xFFE53935),
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: ordersProvider.orders.length,
@@ -88,22 +81,22 @@ class _OrdersPageState extends State<OrdersPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.1),
+              color: const Color(0xFFE53935).withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: const Icon(
               Icons.receipt_long_outlined,
-              size: 64,
-              color: Colors.orange,
+              size: 70,
+              color: Color(0xFFE53935),
             ),
           ),
           const SizedBox(height: 24),
           const Text(
             'Chưa có đơn hàng',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
               color: Colors.black87,
             ),
@@ -115,7 +108,7 @@ class _OrdersPageState extends State<OrdersPage> {
               'Đơn hàng của bạn sẽ hiển thị tại đây',
               style: TextStyle(
                 color: Colors.grey[600],
-                fontSize: 14,
+                fontSize: 15,
               ),
               textAlign: TextAlign.center,
             ),
@@ -128,12 +121,13 @@ class _OrdersPageState extends State<OrdersPage> {
   Widget _buildOrderCard(Map<String, dynamic> order, BuildContext context, 
                         bool isExpanded, String orderId) {
     final status = order['status']?.toString().toLowerCase() ?? 'pending';
-    final canConfirm = status == 'processing' || status == 'shipped';
+    // ✅ CHỈ CHO PHÉP XÁC NHẬN KHI TRẠNG THÁI = "SHIPPED"
+    final canConfirm = status == 'shipped';
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
-      elevation: 3,
-      shadowColor: Colors.black26,
+      elevation: 2,
+      shadowColor: Colors.black12,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
@@ -159,7 +153,7 @@ class _OrdersPageState extends State<OrdersPage> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
+                      color: _getStatusColor(status).withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -203,9 +197,9 @@ class _OrdersPageState extends State<OrdersPage> {
                     child: Text(
                       _getStatusText(status),
                       style: const TextStyle(
-                        fontSize: 12,
+                        fontSize: 11,
                         color: Colors.white,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
@@ -213,6 +207,12 @@ class _OrdersPageState extends State<OrdersPage> {
               ),
               
               const SizedBox(height: 16),
+              
+              // Order Status Timeline
+              if (isExpanded) ...[
+                _buildStatusTimeline(status),
+                const SizedBox(height: 16),
+              ],
               
               // Total Amount
               Container(
@@ -239,11 +239,11 @@ class _OrdersPageState extends State<OrdersPage> {
                       ],
                     ),
                     Text(
-                      '${_formatPrice(order['total_amount'])} VNĐ',
+                      '${_formatPrice(order['total_amount'])}đ',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
-                        color: Colors.orange,
+                        color: Color(0xFFE53935),
                       ),
                     ),
                   ],
@@ -273,6 +273,111 @@ class _OrdersPageState extends State<OrdersPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusTimeline(String currentStatus) {
+    final statuses = [
+      {'status': 'pending', 'label': 'Chờ xử lý', 'icon': Icons.schedule},
+      {'status': 'processing', 'label': 'Đang xử lý', 'icon': Icons.autorenew},
+      {'status': 'shipped', 'label': 'Đang giao', 'icon': Icons.local_shipping},
+      {'status': 'completed', 'label': 'Hoàn thành', 'icon': Icons.check_circle},
+    ];
+
+    final currentIndex = statuses.indexWhere((s) => s['status'] == currentStatus);
+    final isCancelled = currentStatus == 'cancelled';
+
+    if (isCancelled) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.red.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.cancel, color: Colors.red, size: 20),
+            const SizedBox(width: 8),
+            Text(
+              'Đơn hàng đã bị hủy',
+              style: TextStyle(
+                color: Colors.red[700],
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: _getStatusColor(currentStatus).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: List.generate(statuses.length, (index) {
+          final statusData = statuses[index];
+          final isCompleted = index <= currentIndex;
+          final isCurrent = index == currentIndex;
+          
+          return Expanded(
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    if (index > 0)
+                      Expanded(
+                        child: Container(
+                          height: 2,
+                          color: isCompleted 
+                              ? _getStatusColor(currentStatus)
+                              : Colors.grey[300],
+                        ),
+                      ),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: isCompleted 
+                            ? _getStatusColor(currentStatus)
+                            : Colors.grey[300],
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        statusData['icon'] as IconData,
+                        color: Colors.white,
+                        size: isCurrent ? 20 : 16,
+                      ),
+                    ),
+                    if (index < statuses.length - 1)
+                      Expanded(
+                        child: Container(
+                          height: 2,
+                          color: index < currentIndex 
+                              ? _getStatusColor(currentStatus)
+                              : Colors.grey[300],
+                        ),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  statusData['label'] as String,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                    color: isCompleted ? Colors.black87 : Colors.grey[600],
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          );
+        }),
       ),
     );
   }
@@ -313,7 +418,7 @@ class _OrdersPageState extends State<OrdersPage> {
               'Chi tiết đơn hàng',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
-                fontSize: 15,
+                fontSize: 16,
                 color: Colors.grey[800],
               ),
             ),
@@ -322,30 +427,84 @@ class _OrdersPageState extends State<OrdersPage> {
         const SizedBox(height: 12),
         ..._buildOrderItems(order['items'] ?? order['order_items']),
 
-        // Confirm Receipt Button
+        // ✅ NÚT XÁC NHẬN CHỈ HIỆN KHI STATUS = "SHIPPED"
         if (canConfirm) ...[
           const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: () => _confirmReceipt(order),
-              icon: const Icon(Icons.check_circle_outline),
-              label: const Text(
-                'Xác Nhận Đã Nhận Hàng',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.purple.withOpacity(0.1), Colors.purple.withOpacity(0.05)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.purple.withOpacity(0.3)),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.purple,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.local_shipping, color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Đơn hàng đang giao đến!',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.purple[800],
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Vui lòng xác nhận khi đã nhận hàng',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.purple[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                elevation: 2,
-              ),
+                const SizedBox(height: 14),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _confirmReceipt(order),
+                    icon: const Icon(Icons.check_circle, size: 22),
+                    label: const Text(
+                      'Đã Nhận Hàng',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 3,
+                      shadowColor: Colors.green.withOpacity(0.5),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -395,48 +554,135 @@ class _OrdersPageState extends State<OrdersPage> {
                        item['name'] ?? 
                        'Món không xác định';
       
+      // ✅ Lấy đường dẫn ảnh
+      String foodImage = '';
+      if (item['food'] != null && item['food']['image'] != null) {
+        foodImage = item['food']['image'].toString();
+      } else if (item['image'] != null) {
+        foodImage = item['image'].toString();
+      }
+      
+      // ✅ Xử lý path đúng: assets/images/foods/xxx.png
+      String imagePath = foodImage.isNotEmpty 
+          ? 'assets/images/$foodImage' 
+          : '';
+      
       return Container(
-        margin: const EdgeInsets.only(bottom: 8),
+        margin: const EdgeInsets.only(bottom: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
           border: Border.all(color: Colors.grey[200]!),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
+            // ✅ Ảnh món ăn
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: imagePath.isNotEmpty
+                  ? Image.asset(
+                      imagePath,
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        debugPrint('❌ Không load được ảnh: $imagePath');
+                        return _buildImagePlaceholder();
+                      },
+                    )
+                  : _buildImagePlaceholder(),
+            ),
+            const SizedBox(width: 12),
+            
+            // Số lượng
             Container(
-              padding: const EdgeInsets.all(6),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: const Color(0xFFE53935).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(
                 '${item['quantity'] ?? 1}x',
                 style: const TextStyle(
                   fontWeight: FontWeight.bold,
-                  color: Colors.orange,
+                  color: Color(0xFFE53935),
+                  fontSize: 13,
                 ),
               ),
             ),
             const SizedBox(width: 12),
+            
+            // Tên món và giá
             Expanded(
-              child: Text(
-                foodName,
-                style: const TextStyle(fontSize: 14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    foodName,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${_formatPrice(item['price'])}đ',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      fontSize: 13,
+                      color: Colors.grey[700],
+                    ),
+                  ),
+                ],
               ),
             ),
-            Text(
-              '${_formatPrice(item['price'])} VNĐ',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
+            
+            // Tổng giá
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: const Color(0xFFE53935).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                '${_formatPrice((item['price'] ?? 0) * (item['quantity'] ?? 1))}đ',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  color: Color(0xFFE53935),
+                ),
               ),
             ),
           ],
         ),
       );
     }).toList();
+  }
+
+  Widget _buildImagePlaceholder() {
+    return Container(
+      width: 60,
+      height: 60,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE53935).withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Icon(
+        Icons.restaurant,
+        color: Color(0xFFE53935),
+        size: 30,
+      ),
+    );
   }
 
   void _confirmReceipt(Map<String, dynamic> order) async {
@@ -446,26 +692,34 @@ class _OrdersPageState extends State<OrdersPage> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.green),
-            SizedBox(width: 8),
-            Text('Xác Nhận Nhận Hàng'),
+            Icon(Icons.check_circle, color: Colors.green, size: 28),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Xác Nhận Nhận Hàng',
+                style: TextStyle(fontSize: 18),
+              ),
+            ),
           ],
         ),
         content: Text(
-          'Bạn đã nhận được Đơn hàng #${order['id']}?\n\nHành động này sẽ đánh dấu đơn hàng là đã hoàn thành.',
+          'Bạn đã nhận được Đơn hàng #${order['id']}?\n\nĐơn hàng sẽ được đánh dấu là hoàn thành.',
+          style: const TextStyle(fontSize: 15),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('Hủy'),
+            child: const Text('Hủy', style: TextStyle(fontSize: 15)),
           ),
-          ElevatedButton(
+          ElevatedButton.icon(
             onPressed: () => Navigator.pop(context, true),
+            icon: const Icon(Icons.check, size: 18),
+            label: const Text('Xác Nhận', style: TextStyle(fontSize: 15)),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             ),
-            child: const Text('Xác Nhận'),
           ),
         ],
       ),
@@ -481,16 +735,23 @@ class _OrdersPageState extends State<OrdersPage> {
             SnackBar(
               content: const Row(
                 children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('Xác nhận đơn hàng thành công!'),
+                  Icon(Icons.check_circle, color: Colors.white, size: 22),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '✓ Đã xác nhận nhận hàng thành công!',
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+                    ),
+                  ),
                 ],
               ),
               backgroundColor: Colors.green,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(12),
               ),
+              margin: const EdgeInsets.all(16),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
@@ -498,8 +759,15 @@ class _OrdersPageState extends State<OrdersPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Lỗi: $e'),
+              content: Row(
+                children: [
+                  const Icon(Icons.error, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text('Lỗi: $e')),
+                ],
+              ),
               backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
             ),
           );
         }
@@ -564,7 +832,7 @@ class _OrdersPageState extends State<OrdersPage> {
   String _getStatusText(String status) {
     switch (status) {
       case 'completed':
-        return 'ĐÃ HOÀN THÀNH';
+        return 'HOÀN THÀNH';
       case 'processing':
         return 'ĐANG XỬ LÝ';
       case 'shipped':

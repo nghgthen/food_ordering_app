@@ -29,7 +29,7 @@ class _RegisterPageState extends State<RegisterPage> {
     setState(() => _loading = true);
 
     final response = await http.post(
-      Uri.parse("http://10.240.165.238:8000/api/register"), // chỉnh URL API cho đúng
+      Uri.parse("http://10.75.205.238:8000/api/register"), // chỉnh URL API cho đúng
       headers: {"Content-Type": "application/json"},
       body: jsonEncode({
         "name": nameCtrl.text,

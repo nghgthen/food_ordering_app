@@ -87,7 +87,8 @@ class OrdersProvider with ChangeNotifier {
         throw Exception("No authentication token found");
       }
 
-      final url = Uri.parse("${AuthService.baseUrl}/orders/$orderId");
+      // ✅ SỬA ĐÂY: Thêm /status vào endpoint
+      final url = Uri.parse("${AuthService.baseUrl}/orders/$orderId/status");
       final response = await http.patch(
         url,
         headers: {
@@ -108,6 +109,10 @@ class OrdersProvider with ChangeNotifier {
         final index = _orders.indexWhere((o) => o['id'] == orderId);
         if (index != -1) {
           _orders[index]['status'] = status;
+          // Cập nhật cả payment_status nếu cần
+          if (_orders[index]['payment_status'] == 'unpaid') {
+            _orders[index]['payment_status'] = 'paid';
+          }
           notifyListeners();
           debugPrint("   → Local state updated at index $index");
         }

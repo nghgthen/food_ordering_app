@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../models/food.dart';
 import '../../providers/food_provider.dart';
 import '../../providers/cart_provider.dart';
+import '../../services/food_service.dart'; // ✅ THÊM import
 import '../../widgets/food_card.dart';
 import '../food/food_detail_page.dart';
 import '../food/popular_foods_page.dart';
@@ -19,6 +20,13 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String _selectedCategory = 'All';
+  String _searchQuery = ''; // ✅ State lưu từ khóa tìm kiếm
+  
+  final FoodService _foodService = FoodService(); // ✅ THÊM service
+  final TextEditingController _searchController = TextEditingController(); // ✅ Controller cho TextField
+  
+  List<Food> _searchResults = []; // ✅ Lưu kết quả tìm kiếm
+  bool _isSearching = false; // ✅ Trạng thái đang tìm kiếm
 
   final Map<String, int> categoryMap = {
     'All': 0,
@@ -42,6 +50,51 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  @override
+  void dispose() {
+    _searchController.dispose(); // ✅ Dispose controller
+    super.dispose();
+  }
+
+  // ✅ HÀM TÌM KIẾM QUA API
+  Future<void> _performSearch(String keyword) async {
+    if (keyword.trim().isEmpty) {
+      setState(() {
+        _searchQuery = '';
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isSearching = true;
+      _searchQuery = keyword;
+    });
+
+    try {
+      final results = await _foodService.searchFoods(keyword);
+      setState(() {
+        _searchResults = results;
+        _isSearching = false;
+      });
+    } catch (e) {
+      debugPrint('Search error: $e');
+      setState(() {
+        _isSearching = false;
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lỗi tìm kiếm: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
   void _onFoodTap(Food food) {
     Navigator.push(
       context,
@@ -49,7 +102,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // ✅ THÊM VÀO GIỎ - KHÔNG LOGIN
   void _onAddToCart(Food food) {
     context.read<CartProvider>().addToCart(food);
     
@@ -69,10 +121,13 @@ class _HomePageState extends State<HomePage> {
     final foodProvider = context.watch<FoodProvider>();
     final loc = AppLocalizations.of(context);
 
+    // ✅ Logic hiển thị: Nếu đang search thì hiện kết quả search, không thì hiện theo category
     final selectedId = categoryMap[_selectedCategory] ?? 0;
-    final foods = (selectedId == 0)
-        ? foodProvider.foods
-        : foodProvider.getFoodsByCategory(selectedId);
+    final foods = _searchQuery.isNotEmpty
+        ? _searchResults
+        : (selectedId == 0)
+            ? foodProvider.foods
+            : foodProvider.getFoodsByCategory(selectedId);
 
     return Scaffold(
       backgroundColor: Colors.grey[50],
@@ -92,7 +147,6 @@ class _HomePageState extends State<HomePage> {
                       padding: const EdgeInsets.fromLTRB(20, 50, 20, 16),
                       child: Row(
                         children: [
-                          // ✅ LOGO
                           Image.asset(
                             'assets/images/foods/logo.png',
                             height: 50,
@@ -148,16 +202,41 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
 
-                // Categories
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.only(left: 16, top: 16),
-                    child: _buildCategories(),
+                // ✅ Hiển thị số kết quả tìm kiếm
+                if (_searchQuery.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Row(
+                        children: [
+                          Icon(Icons.search, size: 16, color: Colors.grey[600]),
+                          const SizedBox(width: 6),
+                          Text(
+                            _isSearching
+                                ? 'Đang tìm kiếm...'
+                                : 'Tìm thấy ${foods.length} kết quả cho "$_searchQuery"',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                ),
 
-                // Popular Foods
-                if (foodProvider.popularFoods.isNotEmpty)
+                // Categories - Ẩn khi đang search
+                if (_searchQuery.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 16, top: 16),
+                      child: _buildCategories(),
+                    ),
+                  ),
+
+                // Popular Foods - Ẩn khi đang search
+                if (_searchQuery.isEmpty && foodProvider.popularFoods.isNotEmpty)
                   SliverToBoxAdapter(
                     child: Padding(
                       padding: const EdgeInsets.only(left: 16, top: 24),
@@ -165,11 +244,18 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
 
-                // All Foods
+                // All Foods / Search Results
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
-                    child: _buildAllFoods(foods),
+                    child: _isSearching
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(40),
+                              child: CircularProgressIndicator(color: Color(0xFFE53935)),
+                            ),
+                          )
+                        : _buildAllFoods(foods),
                   ),
                 ),
               ],
@@ -192,11 +278,33 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       child: TextField(
+        controller: _searchController, // ✅ Gắn controller
+        onChanged: (value) {
+          // ✅ Debounce: Chỉ search sau khi user ngừng gõ 500ms
+          Future.delayed(const Duration(milliseconds: 500), () {
+            if (_searchController.text == value) {
+              _performSearch(value);
+            }
+          });
+        },
+        onSubmitted: (value) {
+          _performSearch(value); // ✅ Search khi nhấn Enter
+        },
         decoration: InputDecoration(
           hintText: 'Tìm kiếm món ăn...',
           hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
           border: InputBorder.none,
           icon: const Icon(Icons.search, color: Color(0xFFE53935), size: 22),
+          // ✅ Nút xóa
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 20, color: Colors.grey),
+                  onPressed: () {
+                    _searchController.clear();
+                    _performSearch('');
+                  },
+                )
+              : null,
         ),
       ),
     );
@@ -380,7 +488,9 @@ class _HomePageState extends State<HomePage> {
             Icon(Icons.food_bank_outlined, size: 60, color: Colors.grey[400]),
             const SizedBox(height: 12),
             Text(
-              'Không có món ăn',
+              _searchQuery.isNotEmpty 
+                  ? 'Không tìm thấy món ăn nào'
+                  : 'Không có món ăn',
               style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             ),
           ],
@@ -391,11 +501,11 @@ class _HomePageState extends State<HomePage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.only(bottom: 12),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
           child: Text(
-            'Tất cả món ăn',
-            style: TextStyle(
+            _searchQuery.isNotEmpty ? 'Kết quả tìm kiếm' : 'Tất cả món ăn',
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.black87,

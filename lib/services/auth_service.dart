@@ -5,7 +5,7 @@ import 'package:flutter/foundation.dart';
 
 class AuthService {
   static const String baseUrl =
-      "http://10.75.205.238:8000/api"; // ⚠️ Đổi thành IP thật khi chạy device
+      "http://192.168.1.14:8000/api"; // ⚠️ Đổi thành IP thật khi chạy device
 
   /// 🔑 Đăng nhập
   Future<bool> login(String email, String password) async {

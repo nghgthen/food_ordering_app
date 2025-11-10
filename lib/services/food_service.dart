@@ -4,7 +4,7 @@ import '../models/food.dart';
 
 class FoodService {
   // URL base của Laravel API
-  static const String baseUrl = 'http://10.75.205.238:8000/api';
+  static const String baseUrl = 'http://192.168.1.14:8000/api';
 
   // Lấy tất cả foods từ API
   Future<List<Food>> getFoods() async {

@@ -23,7 +23,7 @@ class CartItem {
 class CartProvider with ChangeNotifier {
   final List<CartItem> _items = [];
   final AuthService _authService = AuthService();
-  final String _baseUrl = "http://10.75.205.238:8000/api";
+  final String _baseUrl = "http://192.168.1.14:8000/api";
 
   List<CartItem> get items => _items;
   

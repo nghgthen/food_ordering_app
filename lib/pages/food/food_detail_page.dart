@@ -25,7 +25,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
     try {
       setState(() => isLoading = true);
       final url = Uri.parse(
-        'http://10.75.205.238:8001/ai_pair?food_name=${Uri.encodeComponent(widget.food.name)}',
+        'http://192.168.1.14:8001/ai_pair?food_name=${Uri.encodeComponent(widget.food.name)}',
       );
       final response = await http.get(url);
 
@@ -44,7 +44,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
           
           for (var item in pairWith) {
             // Gọi Laravel API để lấy thông tin đầy đủ món ăn
-            final foodUrl = Uri.parse('http://10.75.205.238:8000/api/foods/${item['id']}');
+            final foodUrl = Uri.parse('http://192.168.1.14:8000/api/foods/${item['id']}');
             final foodResponse = await http.get(foodUrl);
             
             if (foodResponse.statusCode == 200) {
@@ -360,7 +360,7 @@ class _FoodDetailPageState extends State<FoodDetailPage> {
                                       );
                                     },
                                     icon: const Icon(Icons.add_shopping_cart),
-                                    color: const Color(0xFFEECECC),
+                                    color: const Color.fromARGB(255, 250, 19, 2),
                                     iconSize: 24,
                                     style: IconButton.styleFrom(
                                       backgroundColor: const Color(0xFFEECECC).withOpacity(0.2),
